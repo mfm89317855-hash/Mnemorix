@@ -315,7 +315,7 @@ export const MerkleChainExplorer: React.FC = () => {
                     ].map(({ label, value }) => (
                       <div key={label} className="flex gap-2">
                         <span className="text-slate-400 shrink-0">{label}:</span>
-                        <span className="text-cyan-300 font-mono break-all">{value}</span>
+                        <span className="text-red-600 font-mono break-all">{value}</span>
                       </div>
                     ))}
                   </div>

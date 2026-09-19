@@ -243,7 +243,7 @@ export const HackerIntrusionLog: React.FC = () => {
                     ? 'border-red-500/50 bg-red-950/40 text-red-200'
                     : step.source === 'SENTINEL'
                     ? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-200'
-                    : 'border-blue-500/40 bg-blue-950/30 text-blue-200'
+                    : 'border-slate-600/50 bg-slate-900/60 text-slate-200'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5 text-[10px]">
@@ -254,7 +254,7 @@ export const HackerIntrusionLog: React.FC = () => {
                           ? 'bg-red-600 text-white'
                           : step.source === 'SENTINEL'
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-white'
                       }`}
                     >
                       {step.source}

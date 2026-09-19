@@ -181,8 +181,8 @@ export const FirewallPlayground: React.FC = () => {
       title: 'Gemini 2.5 Neural Semantic Guard',
       detail: 'Deep intent reasoning & covert logic bomb audit (~500ms)',
       step: 3,
-      color: 'text-purple-600',
-      activeBg: 'border-purple-400 bg-purple-50/50',
+      color: 'text-red-600',
+      activeBg: 'border-red-400 bg-red-50/50',
       scanLabel: 'Neural Audit...',
       doneLabel: '⚡ Verdict Ready',
     },
@@ -210,7 +210,7 @@ export const FirewallPlayground: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="badge-red font-mono">3-Tier Active Pipeline</span>
-          <span className="badge-purple font-mono">Gemini 2.5 Neural</span>
+          <span className="badge-red font-mono">Gemini 2.5 Neural</span>
         </div>
       </div>
 

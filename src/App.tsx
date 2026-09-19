@@ -49,7 +49,7 @@ const ConsoleContainer: React.FC<{ onBackToLanding: () => void }> = ({ onBackToL
   }, [isCopilotOpen, setIsCopilotOpen]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col selection:bg-red-500/20 selection:text-red-700 relative">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col selection:bg-red-500/20 selection:text-red-700 relative">
       
       {/* Laser Red Accent Stripe at the very top */}
       <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-rose-500 to-red-600 z-50 opacity-90" />
