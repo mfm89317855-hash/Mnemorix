@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -6,6 +6,8 @@ import {
   Zap,
   Lock,
   Activity,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 
@@ -16,42 +18,56 @@ export const SentinelKpiCards: React.FC = () => {
     {
       title: 'Zero-Trust Shield',
       value: isChainCompromised ? 'COMPROMISED' : '100% SECURE',
-      subtext: isChainCompromised ? 'Merkle DAG broken!' : 'SHA-256 seal verified',
+      subtext: isChainCompromised ? 'Merkle DAG broken — self-heal required' : 'SHA-256 seal intact, Ed25519 signed',
       icon: isChainCompromised ? ShieldAlert : ShieldCheck,
       color: isChainCompromised ? 'text-red-600' : 'text-emerald-600',
       badge: isChainCompromised ? 'CRITICAL' : 'OPTIMAL',
       badgeClass: isChainCompromised ? 'badge-red' : 'badge-emerald',
-      iconBg: isChainCompromised ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600',
+      iconBg: isChainCompromised
+        ? 'bg-red-50 text-red-600 border-red-200 shadow-red-100'
+        : 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-emerald-100',
+      trend: isChainCompromised ? <TrendingDown className="h-3.5 w-3.5 text-red-500" /> : null,
+      accentBar: isChainCompromised ? 'bg-red-500' : 'bg-emerald-500',
+      barWidth: isChainCompromised ? '30%' : '100%',
     },
     {
       title: 'Protected Memories',
       value: kpis.totalMemories.toLocaleString(),
-      subtext: `${blocks.length} Merkle blocks anchored`,
+      subtext: `${blocks.length} Merkle blocks anchored in DAG`,
       icon: Boxes,
-      color: 'text-red-600',
+      color: 'text-slate-900',
       badge: '+18 today',
       badgeClass: 'badge-red',
-      iconBg: 'bg-red-50 text-red-600',
+      iconBg: 'bg-red-50 text-red-600 border-red-200 shadow-red-100',
+      trend: <TrendingUp className="h-3.5 w-3.5 text-red-500" />,
+      accentBar: 'bg-gradient-to-r from-red-500 to-rose-400',
+      barWidth: '78%',
     },
     {
       title: 'Injections Blocked',
       value: kpis.injectionsBlocked.toLocaleString(),
-      subtext: 'Indirect prompt & trojans blocked',
+      subtext: 'Trojans, prompt injections & escalations',
       icon: Lock,
       color: 'text-slate-900',
       badge: 'Zero Breach',
       badgeClass: 'badge-slate',
-      iconBg: 'bg-slate-100 text-slate-700',
+      iconBg: 'bg-slate-100 text-slate-600 border-slate-200 shadow-slate-100',
+      trend: <TrendingUp className="h-3.5 w-3.5 text-amber-500" />,
+      accentBar: 'bg-gradient-to-r from-amber-500 to-orange-400',
+      barWidth: '62%',
     },
     {
       title: 'Verification Latency',
-      value: `${kpis.avgLatencyMs} ms`,
-      subtext: 'L1 + L2 + Merkle validation',
+      value: `${kpis.avgLatencyMs}ms`,
+      subtext: 'L1 heuristic + L2 drift + Merkle seal',
       icon: Zap,
       color: 'text-amber-600',
       badge: 'Sub-2ms',
       badgeClass: 'badge-amber',
-      iconBg: 'bg-amber-50 text-amber-600',
+      iconBg: 'bg-amber-50 text-amber-600 border-amber-200 shadow-amber-100',
+      trend: <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />,
+      accentBar: 'bg-gradient-to-r from-amber-500 to-yellow-400',
+      barWidth: '15%',
     },
   ];
 
@@ -62,32 +78,42 @@ export const SentinelKpiCards: React.FC = () => {
         return (
           <div
             key={idx}
-            className="white-red-card p-5 flex flex-col justify-between shadow-2xs"
+            className="kpi-card p-5 flex flex-col justify-between animate-slide-up"
+            style={{ animationDelay: `${idx * 80}ms` }}
           >
-            {/* Top row */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-medium text-slate-500">
+            {/* Top row — title + badge */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-wider">
                 {card.title}
               </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${card.badgeClass}`}>
+              <span className={`${card.badgeClass} font-mono`}>
                 {card.badge}
               </span>
             </div>
 
-            {/* Middle Big Value */}
-            <div className="my-3 flex items-baseline justify-between">
-              <div className={`font-display text-2xl sm:text-3xl font-extrabold tracking-tight ${card.color}`}>
+            {/* Middle — Big value + icon */}
+            <div className="flex items-end justify-between mb-3">
+              <div className={`font-display text-2xl sm:text-3xl font-extrabold tracking-tight leading-none ${card.color}`}>
                 {card.value}
               </div>
-              <div className={`p-2 rounded-lg border border-slate-100 ${card.iconBg}`}>
+              <div className={`flex p-2.5 rounded-xl border shadow-sm ${card.iconBg}`}>
                 <Icon className="h-5 w-5" />
               </div>
             </div>
 
-            {/* Bottom Subtext */}
-            <div className="flex items-center space-x-1.5 text-[11px] font-mono text-slate-500 border-t border-slate-100 pt-2.5">
-              <Activity className="h-3 w-3 text-red-500" />
-              <span>{card.subtext}</span>
+            {/* Trend + Accent Bar */}
+            <div className="space-y-2">
+              <div className="threat-bar">
+                <div
+                  className={`threat-bar-fill ${card.accentBar}`}
+                  style={{ width: card.barWidth }}
+                />
+              </div>
+              <div className="flex items-center space-x-1.5 text-[11px] font-mono text-slate-500">
+                <Activity className="h-3 w-3 text-red-500" />
+                <span className="flex-1">{card.subtext}</span>
+                {card.trend}
+              </div>
             </div>
           </div>
         );

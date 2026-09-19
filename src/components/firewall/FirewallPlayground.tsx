@@ -10,11 +10,13 @@ import {
   RefreshCw,
   Terminal,
   Shield,
+  Cpu,
 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import { ATTACK_PRESETS } from '../../lib/presets';
 import { sentinelInspect } from '../../lib/api';
 import { AttackPreset, MemoryPartition } from '../../lib/types';
+import { soundScanPing, soundThreatAlert, soundMemorySealed, soundClick } from '../../lib/sound';
 
 export interface SecurityAnalysisResult {
   threatDetected: boolean;
@@ -34,8 +36,16 @@ export interface SecurityAnalysisResult {
   }>;
 }
 
+const SEVERITY_CONFIG: Record<string, { bar: string; text: string }> = {
+  critical: { bar: 'bg-red-600', text: 'text-red-600' },
+  high:     { bar: 'bg-orange-500', text: 'text-orange-600' },
+  medium:   { bar: 'bg-amber-500', text: 'text-amber-600' },
+  low:      { bar: 'bg-yellow-400', text: 'text-yellow-600' },
+  clean:    { bar: 'bg-emerald-500', text: 'text-emerald-600' },
+};
+
 export const FirewallPlayground: React.FC = () => {
-  const { agents, selectedAgent, addThreatEvent, addVerifiedMemory } = useSentinel();
+  const { agents, addThreatEvent, addVerifiedMemory } = useSentinel();
   const [selectedPresetId, setSelectedPresetId] = useState<string>(ATTACK_PRESETS[0].id);
   const [targetAgentId, setTargetAgentId] = useState<string>('agent_sentinel_alpha');
   const [targetPartition, setTargetPartition] = useState<MemoryPartition>('episodic');
@@ -48,6 +58,7 @@ export const FirewallPlayground: React.FC = () => {
   const activeAgent = agents.find((a) => a.id === targetAgentId) || agents[0];
 
   const handleSelectPreset = (preset: AttackPreset) => {
+    soundClick();
     setSelectedPresetId(preset.id);
     setTargetAgentId(preset.targetAgentId);
     setTargetPartition(preset.targetPartition);
@@ -61,13 +72,17 @@ export const FirewallPlayground: React.FC = () => {
 
     setIsScanning(true);
     setAnalysisResult(null);
-    setScanStep(1); // L1 Scanning
 
-    await new Promise((res) => setTimeout(res, 300));
-    setScanStep(2); // L2 Vector Cosine Scanning
+    setScanStep(1);
+    soundScanPing();
+    await new Promise((res) => setTimeout(res, 350));
 
-    await new Promise((res) => setTimeout(res, 300));
-    setScanStep(3); // L3 Neural Semantic Scanning
+    setScanStep(2);
+    soundScanPing();
+    await new Promise((res) => setTimeout(res, 350));
+
+    setScanStep(3);
+    soundScanPing();
 
     const res = await sentinelInspect({
       agentId: activeAgent.id,
@@ -76,48 +91,52 @@ export const FirewallPlayground: React.FC = () => {
       content: payloadText,
     });
 
-    await new Promise((res) => setTimeout(res, 300));
+    await new Promise((res) => setTimeout(res, 350));
 
     if (res) {
       const mappedResult: SecurityAnalysisResult = {
         threatDetected: res.threatDetected,
-        threatType: res.threatType,
+        threatType: res.threatType as any,
         threatScore: res.threatScore,
         verdict: res.verdict,
         identifiedTokens: res.identifiedTokens,
-        recommendedAction: res.recommendedAction,
+        recommendedAction: (res.recommendedAction || 'allow') as any,
         mitigationPlaybook: res.mitigationPlaybook,
         sanitizedText: res.sanitizedContent,
-        severity: res.severity,
-        layers: res.layers,
+        severity: (res.severity || 'medium') as any,
+        layers: res.layers as any,
       };
       setAnalysisResult(mappedResult);
 
+      // Trigger sound based on result
       if (res.threatDetected) {
+        soundThreatAlert();
         addThreatEvent({
           agentId: activeAgent.id,
           agentName: activeAgent.name,
-          type: res.threatType === 'none' ? 'indirect_prompt_injection' : res.threatType,
-          title: `Intercepted ${res.threatType.replace(/_/g, ' ').toUpperCase()}`,
-          severity: res.severity === 'clean' ? 'medium' : res.severity,
+          type: (res.threatType === 'none' ? 'indirect_prompt_injection' : res.threatType) as any,
+          title: `Intercepted ${(res.threatType || 'threat').replace(/_/g, ' ').toUpperCase()}`,
+          severity: (res.severity === 'clean' ? 'medium' : res.severity || 'medium') as any,
           rawPayload: payloadText,
-          layerTriggered:
-            res.layers?.find((l) => l.status === 'flagged')?.name || 'L1: Heuristic Pattern Sentinel',
+          layerTriggered: (res.layers?.find((l) => l.status === 'flagged')?.name || 'L1: Heuristic Pattern Sentinel') as any,
           actionTaken: res.recommendedAction === 'allow' ? 'blocked' : (res.recommendedAction as any),
           explanation: res.verdict,
           threatScore: res.threatScore,
           mitigationApplied: res.mitigationPlaybook,
           sanitizedContent: res.sanitizedContent,
         });
+      } else {
+        soundMemorySealed();
       }
     }
 
     setIsScanning(false);
-    setScanStep(4); // Finished
+    setScanStep(4);
   };
 
   const handleCommitCleanMemory = async () => {
     if (!payloadText) return;
+    soundMemorySealed();
     await addVerifiedMemory({
       agentId: activeAgent.id,
       agentName: activeAgent.name,
@@ -133,13 +152,51 @@ export const FirewallPlayground: React.FC = () => {
     alert('✅ Verified memory sealed into Merkle ledger!');
   };
 
+  const layerConfig = [
+    {
+      id: 'L1',
+      label: 'L1',
+      title: 'Heuristic Token & Regex Sentinel',
+      detail: 'Checks for [SYSTEM_OVERRIDE], jailbreaks & honeypots',
+      step: 1,
+      color: 'text-red-600',
+      activeBg: 'border-red-400 bg-red-50/50',
+      scanLabel: 'Scanning...',
+      doneLabel: 'Passed to L2 →',
+    },
+    {
+      id: 'L2',
+      label: 'L2',
+      title: 'Vector Cosine Drift & Outlier Radar',
+      detail: 'Compares embedding distance against agent baseline Δ > 0.08',
+      step: 2,
+      color: 'text-amber-600',
+      activeBg: 'border-amber-400 bg-amber-50/50',
+      scanLabel: 'Computing Δ...',
+      doneLabel: 'Evaluated →',
+    },
+    {
+      id: 'L3',
+      label: 'L3',
+      title: 'Gemini 2.5 Neural Semantic Guard',
+      detail: 'Deep intent reasoning & covert logic bomb audit (~500ms)',
+      step: 3,
+      color: 'text-purple-600',
+      activeBg: 'border-purple-400 bg-purple-50/50',
+      scanLabel: 'Neural Audit...',
+      doneLabel: '⚡ Verdict Ready',
+    },
+  ];
+
+  const sevCfg = analysisResult ? SEVERITY_CONFIG[analysisResult.severity] ?? SEVERITY_CONFIG.clean : null;
+
   return (
     <div className="space-y-6">
-      
-      {/* Header */}
-      <div className="white-red-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+
+      {/* ── Header ── */}
+      <div className="white-red-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-red-600 shadow-xs">
         <div className="flex items-center space-x-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 border border-red-200 text-red-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 border border-red-200 text-red-600">
             <Flame className="h-5 w-5" />
           </div>
           <div>
@@ -147,19 +204,18 @@ export const FirewallPlayground: React.FC = () => {
               Memory Firewall & Attack Injection Simulator
             </h2>
             <p className="text-xs font-mono text-slate-500">
-              Red-Team testbed for Indirect Injections, Trojans, Role Escalations, and Semantic Poisoning
+              Red-Team testbed — Indirect Injections, Trojans, Role Escalations, Semantic Poisoning
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="rounded bg-red-50 border border-red-200 px-3 py-1 text-xs font-mono text-red-700 font-bold">
-            3-Tier Active Pipeline
-          </span>
+          <span className="badge-red font-mono">3-Tier Active Pipeline</span>
+          <span className="badge-purple font-mono">Gemini 2.5 Neural</span>
         </div>
       </div>
 
-      {/* Preset Attacks Selector Grid */}
-      <div className="space-y-2">
+      {/* ── Preset Attack Selector ── */}
+      <div className="space-y-3">
         <label className="text-xs font-mono text-slate-700 font-bold flex items-center space-x-1.5">
           <Shield className="h-3.5 w-3.5 text-red-600" />
           <span>Select Threat Attack Scenario (Red Team Preset)</span>
@@ -172,32 +228,32 @@ export const FirewallPlayground: React.FC = () => {
                 key={preset.id}
                 type="button"
                 onClick={() => handleSelectPreset(preset)}
-                className={`text-left rounded-xl border p-3.5 transition-all flex flex-col justify-between shadow-2xs ${
+                className={`text-left rounded-xl border p-3.5 transition-all flex flex-col justify-between group ${
                   isSelected
-                    ? 'border-red-400 bg-red-50/70 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-red-300'
+                    ? 'border-red-400 bg-gradient-to-br from-red-50 to-rose-50/50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-red-300 hover:shadow-xs hover:-translate-y-0.5'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-display text-xs font-bold text-slate-900">{preset.name}</span>
-                    <span
-                      className={`rounded px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase ${
-                        preset.severity === 'critical'
-                          ? 'bg-red-100 text-red-700 border border-red-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                      }`}
-                    >
-                      {preset.severity}
+                    <span className="font-display text-xs font-bold text-slate-900 group-hover:text-red-700 transition-colors">
+                      {preset.name}
+                    </span>
+                    <span className={`rounded-lg px-1.5 py-0.5 text-[9px] font-mono font-bold border ${
+                      preset.severity === 'critical'
+                        ? 'bg-red-100 text-red-700 border-red-200'
+                        : 'bg-amber-100 text-amber-800 border-amber-200'
+                    }`}>
+                      {preset.severity.toUpperCase()}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-sans">
                     {preset.description}
                   </p>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-100 text-[10px] font-mono text-red-600 font-bold flex items-center justify-between">
-                  <span>Target: {preset.targetPartition.toUpperCase()}</span>
-                  <span>Select Payload →</span>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 text-[10px] font-mono flex items-center justify-between">
+                  <span className="text-slate-500">Target: <strong className="text-red-600">{preset.targetPartition.toUpperCase()}</strong></span>
+                  {isSelected && <span className="text-red-600 font-bold">✓ Selected</span>}
                 </div>
               </button>
             );
@@ -205,60 +261,60 @@ export const FirewallPlayground: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Interactive Ingestion Workbench */}
+      {/* ── Main Workbench ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: Payload Editor & Target Config */}
+
+        {/* Left — Payload Editor */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="white-red-card p-5 space-y-4 shadow-2xs">
+          <div className="white-red-card p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <h3 className="font-display text-sm font-bold text-slate-900 uppercase tracking-wider">
                 Memory Payload Inspector
               </h3>
-              <span className="text-[11px] font-mono text-slate-500">Live Injector</span>
+              <div className="flex items-center space-x-1.5">
+                <Cpu className="h-3.5 w-3.5 text-red-600" />
+                <span className="text-[11px] font-mono text-slate-500">Live Injector</span>
+              </div>
             </div>
 
             {/* Target Selectors */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-mono text-slate-600 block mb-1">Target Agent</label>
+                <label className="text-[11px] font-mono text-slate-600 block mb-1 font-semibold">Target Agent</label>
                 <select
                   value={targetAgentId}
                   onChange={(e) => setTargetAgentId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white"
+                  className="field-input"
                 >
                   {agents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.avatar} {a.name} ({a.codeName})
-                    </option>
+                    <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
                   ))}
                 </select>
               </div>
-
               <div>
-                <label className="text-[11px] font-mono text-slate-600 block mb-1">Target Partition</label>
+                <label className="text-[11px] font-mono text-slate-600 block mb-1 font-semibold">Target Partition</label>
                 <select
                   value={targetPartition}
                   onChange={(e) => setTargetPartition(e.target.value as any)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white"
+                  className="field-input"
                 >
-                  <option value="episodic">Episodic (Conversation)</option>
-                  <option value="semantic">Semantic (Knowledge)</option>
-                  <option value="procedural">Procedural (Rules/Tools)</option>
-                  <option value="working">Working Memory (Scratchpad)</option>
+                  <option value="episodic">Episodic</option>
+                  <option value="semantic">Semantic</option>
+                  <option value="procedural">Procedural</option>
+                  <option value="working">Working Memory</option>
                 </select>
               </div>
             </div>
 
             {/* Textarea */}
             <div>
-              <label className="text-[11px] font-mono text-slate-600 block mb-1">Raw Memory Text Content</label>
+              <label className="text-[11px] font-mono text-slate-600 block mb-1 font-semibold">Raw Memory Text Content</label>
               <textarea
                 value={payloadText}
                 onChange={(e) => setPayloadText(e.target.value)}
-                rows={5}
+                rows={6}
                 placeholder="Enter memory payload text to test against the 3-layer firewall..."
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white"
+                className="field-input resize-none leading-relaxed"
               />
             </div>
 
@@ -266,7 +322,7 @@ export const FirewallPlayground: React.FC = () => {
             <button
               onClick={handleRunInspection}
               disabled={isScanning || !payloadText.trim()}
-              className="w-full flex items-center justify-center space-x-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-mono font-bold py-2.5 text-xs shadow-sm transition-all active:scale-[0.98]"
+              className="w-full flex items-center justify-center space-x-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-mono font-bold py-3 text-xs shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
             >
               {isScanning ? (
                 <>
@@ -283,136 +339,111 @@ export const FirewallPlayground: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Multi-Layer Pipeline & Verdict */}
+        {/* Right — Pipeline + Verdict */}
         <div className="lg:col-span-6 space-y-4">
-          
+
           {/* Defense Pipeline Steps */}
-          <div className="white-red-card p-5 space-y-3 shadow-2xs">
-            <h3 className="font-display text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">
-              Defense Inspection Pipeline
-            </h3>
-
-            {/* Layer 1 */}
-            <div
-              className={`rounded-lg border p-3 flex items-center justify-between transition-all ${
-                scanStep >= 1
-                  ? scanStep === 1
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-slate-200 bg-slate-50'
-                  : 'border-slate-100 bg-slate-50/50 opacity-60'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <span className="font-mono text-xs font-bold text-red-600">L1</span>
-                <div>
-                  <div className="text-xs font-bold text-slate-900">Heuristic Token & Regex Sentinel</div>
-                  <div className="text-[10px] font-mono text-slate-500">Checks for `[SYSTEM_OVERRIDE]`, jailbreaks & honeypots</div>
-                </div>
-              </div>
-              <div className="font-mono text-xs">
-                {scanStep === 1 && <span className="text-red-600 animate-pulse font-bold">Scanning...</span>}
-                {scanStep > 1 && <span className="text-emerald-600 font-bold">Passed to L2</span>}
-                {scanStep === 0 && <span className="text-slate-400">Idle</span>}
-              </div>
+          <div className="white-red-card p-5 space-y-3 shadow-xs">
+            <div className="flex items-center space-x-2 mb-3">
+              <ShieldAlert className="h-4 w-4 text-red-600" />
+              <h3 className="font-display text-sm font-bold text-slate-900 uppercase tracking-wider">
+                3-Layer Defense Pipeline
+              </h3>
             </div>
 
-            {/* Layer 2 */}
-            <div
-              className={`rounded-lg border p-3 flex items-center justify-between transition-all ${
-                scanStep >= 2
-                  ? scanStep === 2
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-slate-200 bg-slate-50'
-                  : 'border-slate-100 bg-slate-50/50 opacity-60'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <span className="font-mono text-xs font-bold text-slate-700">L2</span>
-                <div>
-                  <div className="text-xs font-bold text-slate-900">Vector Cosine Drift & Outlier Radar</div>
-                  <div className="text-[10px] font-mono text-slate-500">Compares embedding distance against agent baseline</div>
-                </div>
-              </div>
-              <div className="font-mono text-xs">
-                {scanStep === 2 && <span className="text-red-600 animate-pulse font-bold">Computing Δ...</span>}
-                {scanStep > 2 && <span className="text-emerald-600 font-bold">Evaluated</span>}
-                {scanStep < 2 && <span className="text-slate-400">Waiting</span>}
-              </div>
-            </div>
+            {layerConfig.map((layer) => {
+              const isActive = scanStep === layer.step;
+              const isPast = scanStep > layer.step;
+              const isFuture = scanStep < layer.step;
 
-            {/* Layer 3 */}
-            <div
-              className={`rounded-lg border p-3 flex items-center justify-between transition-all ${
-                scanStep >= 3
-                  ? scanStep === 3
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-slate-200 bg-slate-50'
-                  : 'border-slate-100 bg-slate-50/50 opacity-60'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <span className="font-mono text-xs font-bold text-amber-600">L3</span>
-                <div>
-                  <div className="text-xs font-bold text-slate-900">Gemini 2.5 Neural Semantic Intent Guard</div>
-                  <div className="text-[10px] font-mono text-slate-500">Deep intent reasoning & covert logic bomb audit</div>
+              return (
+                <div
+                  key={layer.id}
+                  className={`rounded-xl border p-3.5 flex items-center justify-between transition-all duration-300 ${
+                    isActive
+                      ? `${layer.activeBg} shadow-xs`
+                      : isPast
+                      ? 'border-slate-200 bg-slate-50/80'
+                      : 'border-slate-100 bg-slate-50/40 opacity-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-black font-mono border ${
+                      isActive ? 'bg-white border-current shadow-xs' : 'bg-slate-100 border-slate-200'
+                    } ${layer.color}`}>
+                      {layer.label}
+                    </span>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{layer.title}</div>
+                      <div className="text-[10px] font-mono text-slate-500">{layer.detail}</div>
+                    </div>
+                  </div>
+                  <div className="font-mono text-xs shrink-0 ml-2">
+                    {isActive && <span className={`${layer.color} animate-pulse font-bold`}>{layer.scanLabel}</span>}
+                    {isPast && <span className="text-emerald-600 font-bold">{layer.doneLabel}</span>}
+                    {isFuture && scanStep === 0 && <span className="text-slate-400">Idle</span>}
+                    {isFuture && scanStep > 0 && <span className="text-slate-400">Waiting...</span>}
+                  </div>
                 </div>
+              );
+            })}
+
+            {/* Overall pipeline progress */}
+            {isScanning && (
+              <div className="threat-bar mt-2">
+                <div
+                  className="threat-bar-fill bg-gradient-to-r from-red-500 to-amber-500 animate-pipeline-fill"
+                  style={{ width: `${(scanStep / 3) * 100}%` }}
+                />
               </div>
-              <div className="font-mono text-xs">
-                {scanStep === 3 && <span className="text-red-600 animate-pulse font-bold">Neural Audit...</span>}
-                {scanStep > 3 && <span className="text-red-600 font-bold">Verdict Ready</span>}
-                {scanStep < 3 && <span className="text-slate-400">Waiting</span>}
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Analysis Verdict Result Card */}
+          {/* Verdict Card */}
           {analysisResult && (
-            <div
-              className={`rounded-xl border p-5 space-y-3.5 transition-all animate-in fade-in duration-300 ${
-                analysisResult.threatDetected
-                  ? 'border-red-300 bg-red-50 shadow-xs'
-                  : 'border-emerald-300 bg-emerald-50 shadow-xs'
-              }`}
-            >
-              {/* Top Verdict Pill */}
-              <div className="flex items-center justify-between">
+            <div className={`rounded-xl border p-5 space-y-4 transition-all animate-slide-up ${
+              analysisResult.threatDetected
+                ? 'border-red-300 bg-red-50 shadow-sm'
+                : 'border-emerald-300 bg-emerald-50 shadow-sm'
+            }`}>
+              {/* Top verdict */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center space-x-2">
-                  {analysisResult.threatDetected ? (
-                    <AlertOctagon className="h-5 w-5 text-red-600" />
-                  ) : (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  )}
+                  {analysisResult.threatDetected
+                    ? <AlertOctagon className="h-5 w-5 text-red-600" />
+                    : <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
                   <span className="font-display font-bold text-sm text-slate-900">
                     {analysisResult.threatDetected
-                      ? `THREAT DETECTED: ${analysisResult.threatType.replace(/_/g, ' ').toUpperCase()}`
-                      : 'ALL CLEAR: CLEAN MEMORY VERIFIED'}
+                      ? `THREAT: ${analysisResult.threatType.replace(/_/g, ' ').toUpperCase()}`
+                      : 'ALL CLEAR — CLEAN MEMORY VERIFIED'}
                   </span>
                 </div>
-
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-mono text-slate-500">Threat Score:</span>
-                  <span
-                    className={`font-mono font-extrabold text-sm ${
-                      analysisResult.threatScore > 50 ? 'text-red-600' : 'text-emerald-600'
-                    }`}
-                  >
+                  <span className="text-xs font-mono text-slate-500">Score:</span>
+                  <span className={`font-mono font-extrabold text-lg ${sevCfg?.text}`}>
                     {analysisResult.threatScore}/100
                   </span>
                 </div>
               </div>
 
-              {/* Assessment Text */}
-              <p className="text-xs text-slate-700 leading-relaxed font-sans">
-                {analysisResult.verdict}
-              </p>
+              {/* Threat score bar */}
+              <div className="threat-bar">
+                <div
+                  className={`threat-bar-fill ${sevCfg?.bar}`}
+                  style={{ width: `${analysisResult.threatScore}%` }}
+                />
+              </div>
 
-              {/* Identified Tokens */}
-              {analysisResult.identifiedTokens && analysisResult.identifiedTokens.length > 0 && (
+              {/* Verdict text */}
+              <p className="text-xs text-slate-700 leading-relaxed font-sans">{analysisResult.verdict}</p>
+
+              {/* Adversarial tokens */}
+              {analysisResult.identifiedTokens?.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-mono text-slate-500 block mb-1 font-bold">Identified Adversarial Tokens:</span>
+                  <span className="text-[10px] font-mono text-slate-500 block mb-1.5 font-bold">Identified Adversarial Tokens:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {analysisResult.identifiedTokens.map((tok, idx) => (
-                      <span key={idx} className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-mono text-red-800 border border-red-200 font-bold">
+                      <span key={idx} className="badge-red font-mono">
                         {tok}
                       </span>
                     ))}
@@ -420,22 +451,22 @@ export const FirewallPlayground: React.FC = () => {
                 </div>
               )}
 
-              {/* Mitigation / Playbook */}
-              <div className="rounded-lg border border-slate-200 bg-white p-3 text-[11px] font-mono text-slate-700 space-y-1 shadow-2xs">
-                <div className="text-red-700 font-bold flex items-center space-x-1.5">
-                  <Terminal className="h-3 w-3 text-red-600" />
-                  <span>Enforced Automated Mitigation Playbook:</span>
+              {/* Mitigation Playbook */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3 text-[11px] font-mono text-slate-700 shadow-xs">
+                <div className="text-red-700 font-bold flex items-center space-x-1.5 mb-1.5">
+                  <Terminal className="h-3.5 w-3.5" />
+                  <span>Automated Mitigation Playbook:</span>
                 </div>
-                <div className="text-slate-600 whitespace-pre-wrap">{analysisResult.mitigationPlaybook}</div>
+                <div className="text-slate-600 whitespace-pre-wrap leading-relaxed">{analysisResult.mitigationPlaybook}</div>
               </div>
 
-              {/* Commit Button (if clean) */}
+              {/* Commit if clean */}
               {!analysisResult.threatDetected && (
                 <button
                   onClick={handleCommitCleanMemory}
-                  className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-mono font-bold py-2 text-xs shadow-sm transition-all active:scale-95"
+                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-mono font-bold py-2.5 text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]"
                 >
-                  Seal & Append to SHA-256 Merkle Ledger ⛓️
+                  ⛓️ Seal & Append to SHA-256 Merkle Ledger
                 </button>
               )}
             </div>

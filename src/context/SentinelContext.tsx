@@ -197,7 +197,7 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           integrityScore: kpiData.integrityScore,
           avgLatencyMs: kpiData.avgLatencyMs,
         });
-        setIsChainCompromised(kpiData.isChainCompromised ?? false);
+        setIsChainCompromised((kpiData as any).isChainCompromised ?? false);
       }
     } catch (err) {
       console.error('Failed to load Sentinel data from backend API:', err);
@@ -282,8 +282,17 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addVerifiedMemory = useCallback(
     async (item: Omit<MemoryItem, 'id' | 'hash' | 'parentHash' | 'status' | 'timestamp'>) => {
       await addMemory({
-        ...item,
-        status: 'verified',
+        agentId: item.agentId,
+        agentName: item.agentName,
+        partition: item.partition,
+        content: item.content,
+        category: item.category,
+        piiRedacted: item.piiRedacted,
+        confidenceScore: item.confidenceScore,
+        tags: item.tags,
+        author: item.author,
+        vectorDriftDelta: item.vectorDriftDelta,
+        metadata: item.metadata,
       });
       await loadAll();
     },
