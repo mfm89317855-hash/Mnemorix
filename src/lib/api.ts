@@ -4,7 +4,9 @@
  * Falls back gracefully when the backend is unreachable (offline / demo mode).
  */
 
-const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:8000';
+// On Vercel, VITE_API_URL is not set → use relative URLs (same origin).
+// For local dev, set VITE_API_URL=http://127.0.0.1:8000 in .env.local
+const BASE_URL = ((import.meta as any).env?.VITE_API_URL ?? '').replace(/\/$/, '');
 
 // ─── Generic helpers ──────────────────────────────────────────────────────────
 

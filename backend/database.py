@@ -22,6 +22,12 @@ from presets_data import (
 
 DATABASE_URL = os.getenv("DATABASE_URL", "./mnemorix.db")
 
+# On Vercel serverless, only /tmp is writable.
+# vercel.json sets DATABASE_URL=/tmp/mnemorix.db for production.
+_IS_VERCEL = os.getenv("VERCEL") == "1"
+if _IS_VERCEL and DATABASE_URL == "./mnemorix.db":
+    DATABASE_URL = "/tmp/mnemorix.db"
+
 
 # ─── Schema ───────────────────────────────────────────────────────────────────
 

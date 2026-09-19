@@ -136,7 +136,9 @@ export async function processFastnWebhook(
   };
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+// On Vercel, VITE_API_URL is not set → use relative URLs (same origin).
+// For local dev, set VITE_API_URL=http://127.0.0.1:8000 in .env.local
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
 /**
  * Automated Workflow 1: Fastn Pre-Ingestion Memory Firewall

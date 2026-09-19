@@ -96,7 +96,7 @@ const fastn = new FastnSDK({ apiKey: process.env.FASTN_API_KEY });
 
 // Fastn Pre-Ingestion Memory Firewall Hook
 fastn.on('agent:memory:beforeSave', async (event) => {
-  const response = await fetch('http://127.0.0.1:8000/api/fastn/workflow/pre-ingest', {
+  const response = await fetch('https://attachments-inky.vercel.app/api/fastn/workflow/pre-ingest', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -122,7 +122,7 @@ fastn.on('agent:memory:beforeSave', async (event) => {
   return event;
 });`;
 
-  const curlCode = `curl -X POST http://127.0.0.1:8000/api/fastn/workflow/pre-ingest \\
+  const curlCode = `curl -X POST https://attachments-inky.vercel.app/api/fastn/workflow/pre-ingest \\
   -H "Content-Type: application/json" \\
   -d '{
     "agentId": "agent_sentinel_alpha",
