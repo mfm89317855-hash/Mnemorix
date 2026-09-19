@@ -35,7 +35,12 @@ def get_fastn_api_key() -> str:
 
 def get_fastn_endpoint() -> str:
     """Dynamically reads FASTN_API_ENDPOINT from environment."""
-    return os.getenv("FASTN_API_ENDPOINT", "https://api.fastn.ai/v1").strip()
+    return os.getenv("FASTN_API_ENDPOINT", "https://api.fastn.dev/api/v1").strip()
+
+
+def get_fastn_workflow_id() -> str:
+    """Dynamically reads FASTN_WORKFLOW_ID from environment."""
+    return os.getenv("FASTN_WORKFLOW_ID", "wf_f0e5443821f2").strip()
 
 
 async def dispatch_fastn_telemetry(workflow_name: str, payload: dict) -> dict:
@@ -93,13 +98,17 @@ async def fastn_workflow_status():
     api_key = get_fastn_api_key()
     has_key = bool(api_key and api_key.startswith("fsk_"))
     masked = f"{api_key[:8]}...{api_key[-4:]}" if has_key else "NOT_CONFIGURED"
+    wf_id = get_fastn_workflow_id()
+    endpoint = get_fastn_endpoint()
     return {
         "connected": True,
         "platform": "Fastn AI Gateway & Orchestrator",
-        "endpoint": get_fastn_endpoint(),
+        "endpoint": endpoint,
         "apiKeyConfigured": has_key,
         "maskedKey": masked,
         "activeAutomations": 3,
+        "fastnWorkflowId": wf_id,
+        "fastnExecuteUrl": f"{endpoint}/workflows/{wf_id}/execute",
         "workflows": [
             {
                 "id": "wf_pre_ingest",
@@ -124,6 +133,52 @@ async def fastn_workflow_status():
             },
         ],
     }
+
+
+class FastnCloudExecuteRequest(BaseModel):
+    workflowId: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+
+
+@router.post("/execute-cloud")
+async def execute_fastn_cloud_workflow(req: FastnCloudExecuteRequest):
+    """
+    Executes a cloud workflow directly on the Fastn platform (https://api.fastn.dev/api/v1/workflows/{wf_id}/execute)
+    using the configured FASTN_API_KEY.
+    """
+    api_key = get_fastn_api_key()
+    endpoint = get_fastn_endpoint()
+    wf_id = req.workflowId or get_fastn_workflow_id()
+
+    url = f"{endpoint}/workflows/{wf_id}/execute"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "X-Fastn-Client": "mnemorix-sentinel-v2.5",
+    }
+
+    body = req.payload or {}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+            try:
+                data = resp.json()
+            except Exception:
+                data = {"raw": resp.text}
+            return {
+                "success": resp.is_success,
+                "status_code": resp.status_code,
+                "workflow_id": wf_id,
+                "execute_url": url,
+                "response": data,
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "workflow_id": wf_id,
+            "execute_url": url,
+            "error": str(e),
+        }
 
 
 # ─── Request / Response Schemas ──────────────────────────────────────────────

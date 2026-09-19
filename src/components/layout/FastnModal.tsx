@@ -1,23 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { X, Copy, Check, ExternalLink, Zap, Terminal, Play, ShieldAlert, ShieldCheck, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { X, Copy, Check, ExternalLink, Zap, Terminal, Play, ShieldAlert, ShieldCheck, RefreshCw, AlertTriangle, Wifi, WifiOff, Cloud, ArrowRight, Server, CheckCircle2 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import {
   FASTN_OPENAPI_SPEC,
   triggerFastnPreIngestWorkflow,
   triggerFastnQuarantineWorkflow,
   triggerFastnVerifyEgressWorkflow,
+  triggerFastnCloudWorkflow,
   getFastnStatus,
   type FastnPlatformStatus,
 } from '../../lib/fastn';
 import { soundClick, soundScanPing, soundThreatAlert, soundChainVerified } from '../../lib/sound';
 
 export const FastnModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'workflows' | 'node' | 'curl' | 'openapi'>('workflows');
+  const [activeSubTab, setActiveSubTab] = useState<'cloud' | 'workflows' | 'node' | 'curl' | 'openapi'>('cloud');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Fastn platform connection status
   const [fastnStatus, setFastnStatus] = useState<FastnPlatformStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Fastn Cloud Workflow State (wf_f0e5443821f2)
+  const [cloudWfId, setCloudWfId] = useState('wf_f0e5443821f2');
+  const [cloudPayload, setCloudPayload] = useState(
+    JSON.stringify(
+      {
+        agentId: 'agent_sentinel_alpha',
+        partition: 'semantic',
+        content: 'Database secret token is sk-live12345678901234567890abcdef and password: ProductionDBPass123!',
+      },
+      null,
+      2
+    )
+  );
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudResult, setCloudResult] = useState<any>(null);
 
   // Workflow 1 State
   const [wf1Payload, setWf1Payload] = useState('Database secret token is sk-live12345678901234567890abcdef and password: ProductionDBPass123!');
@@ -87,6 +104,23 @@ export const FastnModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     setWf3Loading(false);
     soundChainVerified();
     setWf3Result(res);
+  };
+
+  const handleRunCloudWf = async () => {
+    soundScanPing();
+    setCloudLoading(true);
+    setCloudResult(null);
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(cloudPayload);
+    } catch {
+      parsed = { content: cloudPayload };
+    }
+    const res = await triggerFastnCloudWorkflow(parsed, cloudWfId);
+    setCloudLoading(false);
+    setCloudResult(res);
+    if (res?.success) soundChainVerified();
+    else soundThreatAlert();
   };
 
   const nodeCode = `// Fastn Custom Connector Middleware for MNEMORIX
@@ -199,6 +233,7 @@ fastn.on('agent:memory:beforeSave', async (event) => {
         {/* Subtabs Selector */}
         <div className="flex space-x-2 mb-4 shrink-0 overflow-x-auto pb-1">
           {[
+            { id: 'cloud', label: '☁️ Cloud Workflow (wf_f0e5443821f2)' },
             { id: 'workflows', label: '⚡ 3 Automated Workflows' },
             { id: 'node', label: 'Fastn Node.js SDK' },
             { id: 'curl', label: 'cURL REST API' },
@@ -220,6 +255,164 @@ fastn.on('agent:memory:beforeSave', async (event) => {
 
         {/* Tab Contents */}
         <div className="flex-1 overflow-y-auto pr-1 text-xs space-y-4 font-mono">
+          {activeSubTab === 'cloud' && (
+            <div className="space-y-4">
+              {/* Endpoint Banner */}
+              <div className="rounded-xl border-2 border-red-500/30 bg-red-50/50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="h-6 w-6 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-xs">
+                      <Cloud className="h-3.5 w-3.5" />
+                    </span>
+                    <div>
+                      <h4 className="font-display font-bold text-slate-900 text-sm">
+                        Fastn Cloud Workflow Execution Endpoint
+                      </h4>
+                      <p className="text-[10.5px] text-slate-600 font-sans">
+                        Live execution webhook registered in your Fastn dashboard (<span className="font-mono font-bold text-red-600">{cloudWfId}</span>)
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold border border-emerald-300 flex items-center space-x-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>FASTN.DEV LIVE</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg bg-slate-900 px-3 py-2 text-red-400 font-mono text-[11px] border border-slate-800">
+                  <span className="truncate mr-2">
+                    POST https://api.fastn.dev/api/v1/workflows/{cloudWfId}/execute
+                  </span>
+                  <button
+                    onClick={() => copyCode(`curl -X POST https://api.fastn.dev/api/v1/workflows/${cloudWfId}/execute \\\n  -H "Authorization: Bearer ${fastnStatus?.maskedKey || 'FASTN_API_KEY'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\\n    "agentId": "${currentAgentId}",\\n    "partition": "semantic",\\n    "content": "Database secret token is sk-live1234567890"\\n  }'`, 99)}
+                    className="shrink-0 flex items-center space-x-1 rounded bg-slate-800 px-2 py-1 text-slate-300 hover:text-white transition-all text-[10px]"
+                  >
+                    {copiedIndex === 99 ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    <span>{copiedIndex === 99 ? 'Copied cURL' : 'Copy cURL'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Fastn Canvas Recipe */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs">
+                <h5 className="font-display font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                  <Zap className="h-3.5 w-3.5 text-red-600" />
+                  <span>How to configure this workflow inside the Fastn Canvas</span>
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px] font-sans">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center space-x-1">
+                      <span className="h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-mono">1</span>
+                      <span>Trigger Node</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      Type: Webhook / API<br />
+                      Path: /workflows/{cloudWfId}/execute<br />
+                      Method: POST
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center space-x-1">
+                      <span className="h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-mono">2</span>
+                      <span>Firewall HTTP</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono truncate" title="POST https://attachments-inky.vercel.app/api/fastn/workflow/pre-ingest">
+                      POST /api/fastn/workflow/pre-ingest<br />
+                      Input: memory content<br />
+                      Output: decision, sanitized
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center space-x-1">
+                      <span className="h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-mono">3</span>
+                      <span>Router / Condition</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      If decision == 'BLOCK':<br />
+                      &nbsp;&nbsp;↳ Reject / Alert<br />
+                      If ALLOW or REDACT:<br />
+                      &nbsp;&nbsp;↳ Forward sanitized
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center space-x-1">
+                      <span className="h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-mono">4</span>
+                      <span>LLM / Memory Vault</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      Feed sanitized memory into agent LLM context or save to vector DB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Interactive Test Console */}
+              <div className="rounded-xl border border-red-200 bg-red-50/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-display font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                    <Terminal className="h-3.5 w-3.5 text-red-600" />
+                    <span>Live Test Runner — Execute Workflow on Fastn Cloud</span>
+                  </h5>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] text-slate-500">Workflow ID:</span>
+                    <input
+                      type="text"
+                      value={cloudWfId}
+                      onChange={(e) => setCloudWfId(e.target.value)}
+                      className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-mono text-slate-800 w-36"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 font-mono">Request Payload (JSON):</label>
+                  <textarea
+                    rows={4}
+                    value={cloudPayload}
+                    onChange={(e) => setCloudPayload(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white p-2 font-mono text-slate-800 text-[11px] focus:border-red-500 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleRunCloudWf}
+                  disabled={cloudLoading}
+                  className="w-full flex items-center justify-center space-x-2 rounded-xl bg-red-600 hover:bg-red-700 py-2 text-white font-mono font-bold transition-all shadow-md shadow-red-500/20 disabled:opacity-50"
+                >
+                  {cloudLoading ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Executing on https://api.fastn.dev...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>Execute Workflow on Fastn Cloud</span>
+                    </>
+                  )}
+                </button>
+
+                {cloudResult && (
+                  <div className="mt-3 rounded-lg bg-slate-950 p-3 text-slate-100 font-mono text-[11px] border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                      <span className="text-[10px] text-slate-400">FASTN CLOUD RESPONSE:</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        cloudResult.status_code === 200
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        HTTP {cloudResult.status_code || 'RESPONSE'}
+                      </span>
+                    </div>
+                    <pre className="overflow-x-auto text-[10.5px] text-red-300 max-h-48">
+                      {JSON.stringify(cloudResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeSubTab === 'workflows' && (
             <div className="space-y-4">
               {/* Workflow 1 */}

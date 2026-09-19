@@ -212,6 +212,8 @@ export interface FastnPlatformStatus {
   apiKeyConfigured: boolean;
   maskedKey: string;
   activeAutomations: number;
+  fastnWorkflowId?: string;
+  fastnExecuteUrl?: string;
   workflows: Array<{
     id: string;
     name: string;
@@ -231,6 +233,26 @@ export async function getFastnStatus(): Promise<FastnPlatformStatus | null> {
     return await res.json();
   } catch (err) {
     console.error('Fastn Status Fetch Error:', err);
+    return null;
+  }
+}
+
+/**
+ * Execute Cloud Workflow directly on the Fastn platform
+ */
+export async function triggerFastnCloudWorkflow(payload?: Record<string, any>, workflowId?: string) {
+  try {
+    const res = await fetch(`${API_BASE}/api/fastn/workflow/execute-cloud`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workflowId: workflowId || 'wf_f0e5443821f2',
+        payload: payload || {},
+      }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Fastn Cloud Workflow Execution Error:', err);
     return null;
   }
 }
