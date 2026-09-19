@@ -12,13 +12,21 @@ import {
   Volume2,
   VolumeX,
   Activity,
+  Home,
+  LogOut,
+  Lock,
 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
+import { useAuth } from '../../context/AuthContext';
 import { getStoredGeminiKey } from '../../lib/gemini';
 import { FastnModal } from './FastnModal';
 import { soundClick, soundChainVerified, isSoundMuted, toggleSoundMute } from '../../lib/sound';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onBackToLanding?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
   const {
     isChainCompromised,
     selfHealChain,
@@ -30,6 +38,7 @@ export const Navbar: React.FC = () => {
     setActiveTab,
   } = useSentinel();
 
+  const { user, setIsAuthModalOpen, logout } = useAuth();
   const [isFastnModalOpen, setIsFastnModalOpen] = useState(false);
   const [muted, setMuted] = useState(isSoundMuted());
 
@@ -56,40 +65,53 @@ export const Navbar: React.FC = () => {
         
         <div className="mx-auto flex h-15 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-2">
 
-          {/* Brand Logo + Name */}
-          <div
-            className="flex items-center space-x-3 cursor-pointer group"
-            onClick={() => { soundClick(); setActiveTab('dashboard'); }}
-          >
-            <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl shadow-md transition-all duration-300 ${
-              isChainCompromised
-                ? 'bg-red-600 shadow-red-500/30 glow-red'
-                : 'bg-red-600 shadow-red-500/20 group-hover:shadow-red-500/40'
-            }`}>
-              {isChainCompromised ? (
-                <ShieldAlert className="h-5 w-5 animate-pulse text-white" />
-              ) : (
-                <Shield className="h-5 w-5 text-white transition-transform group-hover:scale-110" />
-              )}
-              {/* Pulse ring on compromise */}
-              {isChainCompromised && (
-                <span className="absolute inset-0 rounded-xl bg-red-500 animate-ping opacity-30" />
-              )}
+          {/* Left: Brand Logo + Landing Page Link */}
+          <div className="flex items-center space-x-3">
+            <div
+              className="flex items-center space-x-3 cursor-pointer group"
+              onClick={() => { soundClick(); setActiveTab('dashboard'); }}
+            >
+              <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl shadow-md transition-all duration-300 ${
+                isChainCompromised
+                  ? 'bg-red-600 shadow-red-500/30 glow-red'
+                  : 'bg-red-600 shadow-red-500/20 group-hover:shadow-red-500/40'
+              }`}>
+                {isChainCompromised ? (
+                  <ShieldAlert className="h-5 w-5 animate-pulse text-white" />
+                ) : (
+                  <Shield className="h-5 w-5 text-white transition-transform group-hover:scale-110" />
+                )}
+                {isChainCompromised && (
+                  <span className="absolute inset-0 rounded-xl bg-red-500 animate-ping opacity-30" />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-display text-lg font-extrabold tracking-tight text-slate-900 group-hover:text-red-700 transition-colors">
+                    MNEMORIX
+                  </span>
+                  <span className="rounded-md bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 px-2 py-0.5 text-[10px] font-mono font-bold text-red-600 shadow-xs">
+                    SENTINEL
+                  </span>
+                </div>
+                <p className="text-[10px] font-mono text-slate-400 font-medium tracking-wide">
+                  Zero-Trust AI Memory Firewall
+                </p>
+              </div>
             </div>
 
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-display text-lg font-extrabold tracking-tight text-slate-900 group-hover:text-red-700 transition-colors">
-                  MNEMORIX
-                </span>
-                <span className="rounded-md bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 px-2 py-0.5 text-[10px] font-mono font-bold text-red-600 shadow-xs">
-                  SENTINEL v2.5
-                </span>
-              </div>
-              <p className="text-[10px] font-mono text-slate-400 font-medium tracking-wide">
-                Zero-Trust AI Memory Firewall
-              </p>
-            </div>
+            {/* Back to Landing Button */}
+            {onBackToLanding && (
+              <button
+                onClick={() => { soundClick(); onBackToLanding(); }}
+                className="hidden lg:flex items-center space-x-1.5 ml-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-red-50 hover:border-red-300 hover:text-red-700 px-2.5 py-1 text-[11px] font-mono font-bold text-slate-600 transition-all"
+                title="Return to Public Overview Landing Page"
+              >
+                <Home className="h-3.5 w-3.5 text-red-600" />
+                <span>Overview</span>
+              </button>
+            )}
           </div>
 
           {/* Center — Live Status Indicator */}
@@ -178,6 +200,39 @@ export const Navbar: React.FC = () => {
               <span className="hidden sm:inline">{hasGeminiKey ? 'Gemini Active' : 'API Key'}</span>
               <Key className="h-3 w-3 opacity-60" />
             </button>
+
+            {/* Google User Avatar / Sign-In Button */}
+            {user ? (
+              <div
+                onClick={() => { soundClick(); setIsAuthModalOpen(true); }}
+                className="flex items-center space-x-2 rounded-xl border border-red-200 bg-red-50/80 px-2 py-1 cursor-pointer hover:bg-red-100 transition-colors shadow-2xs"
+                title={`Logged in as ${user.displayName || user.email}`}
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="h-6 w-6 rounded-full border border-red-300 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px]">
+                    {(user.displayName || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="text-[11px] font-mono font-bold text-slate-800 hidden md:inline truncate max-w-[80px]">
+                  {user.displayName?.split(' ')[0]}
+                </span>
+              </div>
+            ) : (
+              <button
+                onClick={() => { soundClick(); setIsAuthModalOpen(true); }}
+                className="flex items-center space-x-1.5 rounded-xl border border-slate-300 bg-white hover:border-red-400 hover:bg-red-50/40 px-2.5 py-1.5 text-xs font-mono font-semibold text-slate-700 transition-all shadow-2xs"
+                title="Sign in with Google"
+              >
+                <Lock className="h-3.5 w-3.5 text-red-600" />
+                <span className="hidden sm:inline">Google Sign In</span>
+              </button>
+            )}
 
             {/* Sentinel AI Copilot */}
             <button

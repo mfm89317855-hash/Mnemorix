@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SentinelProvider, useSentinel } from './context/SentinelContext';
+import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { SettingsModal } from './components/layout/SettingsModal';
 import { ComplianceModal } from './components/layout/ComplianceModal';
 import { SentinelCopilotDrawer } from './components/copilot/SentinelCopilotDrawer';
+import { AuthModal } from './components/auth/AuthModal';
 
 import { DashboardTab } from './components/dashboard/DashboardTab';
 import { MerkleChainExplorer } from './components/hashchain/MerkleChainExplorer';
@@ -12,6 +14,7 @@ import { FirewallPlayground } from './components/firewall/FirewallPlayground';
 import { AgentFleetView } from './components/fleet/AgentFleetView';
 import { PolicyStudio } from './components/policies/PolicyStudio';
 import { ForensicAuditView } from './components/audit/ForensicAuditView';
+import { LandingPage } from './components/landing/LandingPage';
 import { soundClick } from './lib/sound';
 
 const MainContent: React.FC = () => {
@@ -29,7 +32,7 @@ const MainContent: React.FC = () => {
   );
 };
 
-const AppContainer: React.FC = () => {
+const ConsoleContainer: React.FC<{ onBackToLanding: () => void }> = ({ onBackToLanding }) => {
   const { isCopilotOpen, setIsCopilotOpen } = useSentinel();
 
   // Global keyboard shortcuts (Cmd+K / Ctrl+K for Copilot)
@@ -49,13 +52,13 @@ const AppContainer: React.FC = () => {
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col selection:bg-red-500/20 selection:text-red-700 relative">
       
       {/* Laser Red Accent Stripe at the very top */}
-      <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-rose-500 to-red-600 z-50 opacity-90"></div>
+      <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-rose-500 to-red-600 z-50 opacity-90" />
 
       {/* Ambient Grid Background */}
       <div className="fixed inset-0 bg-white-grid bg-white-radial pointer-events-none z-0" />
 
-      {/* Top Navbar */}
-      <Navbar />
+      {/* Top Console Navbar */}
+      <Navbar onBackToLanding={onBackToLanding} />
 
       {/* Main Body with Sidebar + Active Tab Content */}
       <div className="relative z-10 flex flex-1 flex-col lg:flex-row">
@@ -67,6 +70,7 @@ const AppContainer: React.FC = () => {
       <SettingsModal />
       <ComplianceModal />
       <SentinelCopilotDrawer />
+      <AuthModal />
 
       {/* Bottom Telemetry Footer */}
       <footer className="relative z-10 border-t border-slate-200 bg-white/90 backdrop-blur-md px-4 py-3 text-[11px] font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full">
@@ -93,10 +97,37 @@ const AppContainer: React.FC = () => {
 };
 
 export function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'console'>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#console') {
+      return 'console';
+    }
+    return 'landing';
+  });
+
+  const handleLaunchConsole = () => {
+    soundClick();
+    setCurrentView('console');
+    window.location.hash = 'console';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToLanding = () => {
+    soundClick();
+    setCurrentView('landing');
+    window.location.hash = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <SentinelProvider>
-      <AppContainer />
-    </SentinelProvider>
+    <AuthProvider>
+      <SentinelProvider>
+        {currentView === 'landing' ? (
+          <LandingPage onLaunchConsole={handleLaunchConsole} />
+        ) : (
+          <ConsoleContainer onBackToLanding={handleBackToLanding} />
+        )}
+      </SentinelProvider>
+    </AuthProvider>
   );
 }
 
