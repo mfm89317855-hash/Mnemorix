@@ -17,6 +17,7 @@ from crypto_utils import (
     generate_block_signature,
 )
 from firewall import get_firewall, MemoryFirewall
+from routers.fastn import dispatch_fastn_telemetry
 
 router = APIRouter(prefix="/api/memories", tags=["Memories"])
 
@@ -227,6 +228,20 @@ async def add_memory(body: MemoryItemCreate):
 
         await db.commit()
 
+        # Stream memory automation event to Fastn AI Platform
+        try:
+            await dispatch_fastn_telemetry("platform_memory_ingest", {
+                "event": "INGESTION_COMMITTED",
+                "agentId": body.agentId,
+                "memoryId": mem_id,
+                "decision": decision.decision,
+                "rule_id": decision.rule_id,
+                "merkleBlock": block_number,
+                "piiRedacted": bool(is_pii_redacted),
+            })
+        except Exception:
+            pass
+
         async with db.execute("SELECT * FROM memories WHERE id=?", (mem_id,)) as cur:
             row = await cur.fetchone()
         return memory_row_to_dict(row)
@@ -249,6 +264,17 @@ async def quarantine_memory(memory_id: str):
             (row["agentId"],),
         )
         await db.commit()
+
+        # Stream quarantine automation event to Fastn AI Platform
+        try:
+            await dispatch_fastn_telemetry("platform_memory_quarantine", {
+                "event": "MEMORY_QUARANTINED",
+                "memoryId": memory_id,
+                "agentId": row["agentId"],
+            })
+        except Exception:
+            pass
+
         async with db.execute("SELECT * FROM memories WHERE id=?", (memory_id,)) as cur:
             updated = await cur.fetchone()
         return memory_row_to_dict(updated)
@@ -271,6 +297,17 @@ async def restore_memory(memory_id: str):
             (row["agentId"],),
         )
         await db.commit()
+
+        # Stream restore automation event to Fastn AI Platform
+        try:
+            await dispatch_fastn_telemetry("platform_memory_restore", {
+                "event": "MEMORY_RESTORED",
+                "memoryId": memory_id,
+                "agentId": row["agentId"],
+            })
+        except Exception:
+            pass
+
         async with db.execute("SELECT * FROM memories WHERE id=?", (memory_id,)) as cur:
             updated = await cur.fetchone()
         return memory_row_to_dict(updated)

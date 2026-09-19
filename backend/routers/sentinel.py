@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 from models import SentinelInspectRequest, SentinelInspectResponse, InspectionLayer
 from crypto_utils import sha256, compute_merkle_root
+from routers.fastn import dispatch_fastn_telemetry
 
 router = APIRouter(prefix="/api/sentinel", tags=["Sentinel"])
 
@@ -247,6 +248,19 @@ async def inspect_memory(body: SentinelInspectRequest) -> SentinelInspectRespons
     # ── Build cryptographic fingerprint ──────────────────────────────────────
     content_hash = sha256(body.content)
     merkle_root  = compute_merkle_root([content_hash, sha256(body.agentId)])
+
+    # Stream inspection event to Fastn AI Platform
+    try:
+        await dispatch_fastn_telemetry("sentinel_inspection", {
+            "event": "INSPECTION_COMPLETED",
+            "agentId": body.agentId,
+            "threatDetected": overall_threat,
+            "threatType": final_threat_type,
+            "threatScore": final_score,
+            "recommendedAction": final_action,
+        })
+    except Exception:
+        pass
 
     return SentinelInspectResponse(
         allowed=not overall_threat,

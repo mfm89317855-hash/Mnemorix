@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, ExternalLink, Zap, Terminal, Play, ShieldAlert, ShieldCheck, RefreshCw, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Copy, Check, ExternalLink, Zap, Terminal, Play, ShieldAlert, ShieldCheck, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import {
   FASTN_OPENAPI_SPEC,
   triggerFastnPreIngestWorkflow,
   triggerFastnQuarantineWorkflow,
   triggerFastnVerifyEgressWorkflow,
+  getFastnStatus,
+  type FastnPlatformStatus,
 } from '../../lib/fastn';
 import { soundClick, soundScanPing, soundThreatAlert, soundChainVerified } from '../../lib/sound';
 
 export const FastnModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [activeSubTab, setActiveSubTab] = useState<'workflows' | 'node' | 'curl' | 'openapi'>('workflows');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  // Fastn platform connection status
+  const [fastnStatus, setFastnStatus] = useState<FastnPlatformStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   // Workflow 1 State
   const [wf1Payload, setWf1Payload] = useState('Database secret token is sk-live12345678901234567890abcdef and password: ProductionDBPass123!');
@@ -29,6 +35,16 @@ export const FastnModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
   const { agents } = useSentinel();
   const currentAgentId = agents[0]?.id || 'agent_sentinel_alpha';
+
+  // Fetch Fastn status when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setStatusLoading(true);
+    getFastnStatus().then((s) => {
+      setFastnStatus(s);
+      setStatusLoading(false);
+    });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -139,8 +155,8 @@ fastn.on('agent:memory:beforeSave', async (event) => {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600 border border-red-700 text-white shadow-md shadow-red-500/20">
             <Zap className="h-6 w-6" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap gap-2">
               <h3 className="font-display text-lg font-bold text-slate-900">
                 Fastn Automated Memory Firewall & Workflows
               </h3>
@@ -151,8 +167,34 @@ fastn.on('agent:memory:beforeSave', async (event) => {
             <p className="text-xs text-slate-500 font-mono">
               3 automated security workflows integrating MNEMORIX Sentinel with the Fastn AI Platform
             </p>
+            {/* Live connection status chip */}
+            <div className="mt-1.5 flex items-center space-x-2">
+              {statusLoading ? (
+                <span className="flex items-center space-x-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[10px] font-mono text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
+                  <span>Connecting to Fastn...</span>
+                </span>
+              ) : fastnStatus?.apiKeyConfigured ? (
+                <span className="flex items-center space-x-1.5 rounded-full bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-mono text-emerald-700 font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <Wifi className="h-2.5 w-2.5" />
+                  <span>● CONNECTED TO FASTN ({fastnStatus.maskedKey})</span>
+                </span>
+              ) : (
+                <span className="flex items-center space-x-1.5 rounded-full bg-amber-50 border border-amber-300 px-2.5 py-0.5 text-[10px] font-mono text-amber-700 font-bold">
+                  <WifiOff className="h-2.5 w-2.5" />
+                  <span>API KEY NOT CONFIGURED</span>
+                </span>
+              )}
+              {fastnStatus && (
+                <span className="text-[10px] font-mono text-slate-400">
+                  {fastnStatus.activeAutomations} active automations
+                </span>
+              )}
+            </div>
           </div>
         </div>
+
 
         {/* Subtabs Selector */}
         <div className="flex space-x-2 mb-4 shrink-0 overflow-x-auto pb-1">

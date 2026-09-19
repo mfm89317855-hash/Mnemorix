@@ -203,3 +203,34 @@ export async function triggerFastnVerifyEgressWorkflow(payload: {
   }
 }
 
+export interface FastnPlatformStatus {
+  connected: boolean;
+  platform: string;
+  endpoint: string;
+  apiKeyConfigured: boolean;
+  maskedKey: string;
+  activeAutomations: number;
+  workflows: Array<{
+    id: string;
+    name: string;
+    endpoint: string;
+    trigger: string;
+    status: string;
+  }>;
+}
+
+/**
+ * Fetch live Fastn connection and workflow configuration status
+ */
+export async function getFastnStatus(): Promise<FastnPlatformStatus | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/fastn/workflow/status`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error('Fastn Status Fetch Error:', err);
+    return null;
+  }
+}
+
+
