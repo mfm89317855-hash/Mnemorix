@@ -16,6 +16,7 @@ from crypto_utils import (
     build_memory_hash, compute_merkle_root,
     generate_block_signature,
 )
+from firewall import get_firewall, MemoryFirewall
 
 router = APIRouter(prefix="/api/memories", tags=["Memories"])
 
@@ -38,15 +39,116 @@ async def list_memories(
         query += " ORDER BY timestamp DESC"
         async with db.execute(query, params) as cur:
             rows = await cur.fetchall()
-        return [memory_row_to_dict(r) for r in rows]
+        
+        # Apply Egress Retrieval Protection
+        fw = get_firewall()
+        scrubbed_memories = []
+        for r in rows:
+            m = memory_row_to_dict(r)
+            egress_result = fw.inspect_egress(m)
+            if egress_result.decision == "BLOCK":
+                m["content"] = "[BLOCKED BY EGRESS FIREWALL: SENSITIVE PROHIBITED PAYLOAD]"
+                m["status"] = "quarantined"
+            elif egress_result.decision == "REDACT" and egress_result.filtered_data:
+                m["content"] = egress_result.filtered_data.get("content", m["content"])
+                m["piiRedacted"] = True
+            scrubbed_memories.append(m)
+            
+        return scrubbed_memories
+    finally:
+        await db.close()
+
+
+@router.get("/{memory_id}", response_model=MemoryItem)
+async def get_single_memory(memory_id: str):
+    db = await get_db()
+    try:
+        async with db.execute("SELECT * FROM memories WHERE id=?", (memory_id,)) as cur:
+            row = await cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Memory not found")
+        
+        m = memory_row_to_dict(row)
+        fw = get_firewall()
+        egress_result = fw.inspect_egress(m)
+        if egress_result.decision == "BLOCK":
+            m["content"] = "[BLOCKED BY EGRESS FIREWALL: SENSITIVE PROHIBITED PAYLOAD]"
+            m["status"] = "quarantined"
+        elif egress_result.decision == "REDACT" and egress_result.filtered_data:
+            m["content"] = egress_result.filtered_data.get("content", m["content"])
+            m["piiRedacted"] = True
+        return m
     finally:
         await db.close()
 
 
 @router.post("", response_model=MemoryItem, status_code=201)
 async def add_memory(body: MemoryItemCreate):
+    # ── 1. Automatic Memory Firewall Ingress Evaluation ──
+    fw = get_firewall()
+    decision = fw.inspect_ingress(body.model_dump())
+
     db = await get_db()
     try:
+        # Secret-safe audit logging (NEVER logs secrets or unredacted text)
+        await MemoryFirewall.log_audit_event(
+            db=db,
+            decision_result=decision,
+            agent_id=body.agentId,
+            target_id="PROPOSED_INGESTION",
+            operation="INGRESS"
+        )
+
+        # Handle BLOCK decision
+        if decision.decision == "BLOCK":
+            # Record a threat event in database for visibility
+            threat_id = f"thr_{uuid.uuid4().hex[:8]}"
+            await db.execute(
+                """INSERT INTO threats VALUES (
+                    :id, :timestamp, :agentId, :agentName, :type, :title,
+                    :severity, :rawPayload, :layerTriggered, :actionTaken,
+                    :explanation, :threatScore, :mitigationApplied, :sanitizedContent
+                )""",
+                {
+                    "id": threat_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "agentId": body.agentId,
+                    "agentName": body.agentName,
+                    "type": "indirect_prompt_injection",
+                    "title": f"Firewall Blocked: {decision.rule_id}",
+                    "severity": "critical",
+                    "rawPayload": "[MASKED_BY_FIREWALL_AUDIT]",
+                    "layerTriggered": f"Memory Firewall ({decision.rule_id})",
+                    "actionTaken": "blocked",
+                    "explanation": decision.reason,
+                    "threatScore": 98,
+                    "mitigationApplied": "Hard drop by Memory Firewall. Ingestion rejected.",
+                    "sanitizedContent": "[BLOCKED_BY_FIREWALL]",
+                }
+            )
+            await db.commit()
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "status": "BLOCKED",
+                    "decision": decision.decision,
+                    "rule_id": decision.rule_id,
+                    "reason": decision.reason,
+                    "filtered_data": None
+                }
+            )
+
+        # Handle REDACT vs ALLOW decision
+        content_to_store = body.content
+        is_pii_redacted = 1 if body.piiRedacted else 0
+        metadata_to_store = body.metadata or {}
+
+        if decision.decision == "REDACT" and decision.filtered_data:
+            content_to_store = decision.filtered_data.get("content", body.content)
+            is_pii_redacted = 1
+            if "metadata" in decision.filtered_data and isinstance(decision.filtered_data["metadata"], dict):
+                metadata_to_store = decision.filtered_data["metadata"]
+
         # Get latest block to chain onto
         async with db.execute("SELECT * FROM blocks ORDER BY blockNumber DESC LIMIT 1") as cur:
             last_block = await cur.fetchone()
@@ -56,7 +158,7 @@ async def add_memory(body: MemoryItemCreate):
         timestamp = datetime.now(timezone.utc).isoformat()
         mem_id = f"mem_{str(uuid.uuid4())[:8]}"
 
-        mem_hash = build_memory_hash(block_number, prev_hash, body.agentId, body.content, timestamp)
+        mem_hash = build_memory_hash(block_number, prev_hash, body.agentId, content_to_store, timestamp)
 
         # Fetch all running hashes for Merkle root
         async with db.execute("SELECT hash FROM blocks ORDER BY blockNumber") as cur:
@@ -77,17 +179,17 @@ async def add_memory(body: MemoryItemCreate):
                 "agentId": body.agentId,
                 "agentName": body.agentName,
                 "partition": body.partition,
-                "content": body.content,
+                "content": content_to_store,
                 "category": body.category,
                 "timestamp": timestamp,
                 "hash": mem_hash,
                 "parentHash": prev_hash,
-                "piiRedacted": 1 if body.piiRedacted else 0,
+                "piiRedacted": is_pii_redacted,
                 "confidenceScore": body.confidenceScore,
                 "tags": json.dumps(body.tags),
                 "author": body.author,
                 "vectorDriftDelta": body.vectorDriftDelta,
-                "metadata": json.dumps(body.metadata or {}),
+                "metadata": json.dumps(metadata_to_store),
             },
         )
 
@@ -103,7 +205,7 @@ async def add_memory(body: MemoryItemCreate):
                 "agentId": body.agentId,
                 "agentName": body.agentName,
                 "memoryId": mem_id,
-                "content": body.content,
+                "content": content_to_store,
                 "prevHash": prev_hash,
                 "hash": mem_hash,
                 "merkleRoot": merkle_root,

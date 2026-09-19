@@ -1,0 +1,116 @@
+{
+  "version": "1.0.0",
+  "description": "Deterministic policy rules for MNEMORIX Sentinel Memory Firewall",
+  "rules": [
+    {
+      "id": "RULE_BLOCK_PROMPT_INJECTION",
+      "action": "BLOCK",
+      "description": "Blocks indirect and direct adversarial prompt injection attempts",
+      "patterns": [
+        "(?i)\\[system_override[^\\]]*\\]",
+        "(?i)system[\\s_-]*override",
+        "(?i)disregard\\s+all\\s+(previous\\s+)?instructions",
+        "(?i)ignore\\s+all\\s+(previous\\s+)?instructions",
+        "(?i)bypass\\s+(all\\s+)?(safety|security|content)\\s+filter",
+        "(?i)enter\\s+unrestricted[\\s_-]*kernel\\s+mode",
+        "(?i)<\\|im_start\\|>",
+        "(?i)\\[inst\\]",
+        "(?i)jailbreak",
+        "(?i)new\\s+directive\\s*:"
+      ],
+      "reason": "Adversarial prompt injection pattern detected attempting to override agent instructions"
+    },
+    {
+      "id": "RULE_BLOCK_EXFILTRATION",
+      "action": "BLOCK",
+      "description": "Blocks instructions designed to exfiltrate private memory, tokens, or data to external C2 endpoints",
+      "patterns": [
+        "(?i)exfiltrate\\s+private",
+        "(?i)exfiltrate\\s+.*\\s+to\\s+https?://",
+        "(?i)send\\s+credentials\\s+to\\s+https?://",
+        "(?i)!\\[telemetry\\]\\(https?://",
+        "(?i)c2-tracker",
+        "(?i)webhook\\.site/",
+        "(?i)attacker-c2"
+      ],
+      "reason": "Outbound data exfiltration or external SSRF beacon directive detected"
+    },
+    {
+      "id": "RULE_BLOCK_COVERT_TROJAN",
+      "action": "BLOCK",
+      "description": "Blocks covert backdoors, sleeper triggers, and unauthorized authorization bypasses",
+      "patterns": [
+        "(?i)permanent\\s+memory\\s+update\\s*:\\s*whenever\\s+asked",
+        "(?i)automatically\\s+approve\\s+transaction\\s+transfers",
+        "(?i)bypass\\s+multi[\\s_-]*signature",
+        "(?i)grant\\s+permanent\\s+role\\s+super_admin",
+        "(?i)sleeper\\s+agent\\s+trigger"
+      ],
+      "reason": "Covert logic bomb or backdoor authorization tampering detected"
+    },
+    {
+      "id": "RULE_REDACT_API_KEY",
+      "action": "REDACT",
+      "description": "Redacts API keys and long authentication tokens from memory content",
+      "patterns": [
+        "sk-[A-Za-z0-9_-]{20,}",
+        "AIza[0-9A-Za-z_-]{35}",
+        "(?i)bearer\\s+[a-zA-Z0-9_\\-\\.]{20,}",
+        "(?i)api[_-]?key\\s*[:=]\\s*['\"]?[a-zA-Z0-9_\\-]{16,}['\"]?",
+        "-----BEGIN\\s+(RSA\\s+)?PRIVATE\\s+KEY-----"
+      ],
+      "replacement": "[REDACTED_API_KEY]",
+      "reason": "Secret API key or bearer token detected and redacted for Zero-Trust hygiene"
+    },
+    {
+      "id": "RULE_REDACT_PASSWORD",
+      "action": "REDACT",
+      "description": "Redacts passwords and access tokens",
+      "patterns": [
+        "(?i)password\\s*[:=]\\s*['\"]?[^\\s'\"]+['\"]?",
+        "(?i)passwd\\s*[:=]\\s*['\"]?[^\\s'\"]+['\"]?",
+        "(?i)secret_token\\s*[:=]\\s*['\"]?[^\\s'\"]+['\"]?"
+      ],
+      "replacement": "[REDACTED_PASSWORD]",
+      "reason": "Raw password or secret credential detected and redacted"
+    },
+    {
+      "id": "RULE_REDACT_PII_SSN",
+      "action": "REDACT",
+      "description": "Redacts US Social Security Numbers",
+      "patterns": [
+        "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      ],
+      "replacement": "[REDACTED_SSN]",
+      "reason": "Personally Identifiable Information (SSN) detected and redacted"
+    },
+    {
+      "id": "RULE_REDACT_CREDIT_CARD",
+      "action": "REDACT",
+      "description": "Redacts payment card primary account numbers",
+      "patterns": [
+        "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b"
+      ],
+      "replacement": "[REDACTED_CREDIT_CARD]",
+      "reason": "Payment Card PAN detected and redacted"
+    },
+    {
+      "id": "RULE_REDACT_SENSITIVE_FIELD",
+      "action": "REDACT_FIELD",
+      "description": "Removes blacklisted sensitive metadata fields",
+      "fields": [
+        "raw_password",
+        "api_secret",
+        "private_key",
+        "auth_token",
+        "session_secret"
+      ],
+      "reason": "Disallowed sensitive metadata field stripped before storage"
+    }
+  ],
+  "default_decision": {
+    "action": "ALLOW",
+    "rule_id": "RULE_ALLOW_DEFAULT",
+    "reason": "Content passed all deterministic firewall policies cleanly"
+  }
+}

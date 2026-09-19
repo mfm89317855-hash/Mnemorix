@@ -135,3 +135,71 @@ export async function processFastnWebhook(
     timestamp: new Date().toISOString(),
   };
 }
+
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
+/**
+ * Automated Workflow 1: Fastn Pre-Ingestion Memory Firewall
+ */
+export async function triggerFastnPreIngestWorkflow(payload: {
+  agentId: string;
+  agentName?: string;
+  partition?: string;
+  content: string;
+}) {
+  try {
+    const res = await fetch(`${API_BASE}/api/fastn/workflow/pre-ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Fastn Workflow 1 Error:', err);
+    return null;
+  }
+}
+
+/**
+ * Automated Workflow 2: Fastn Threat Quarantine & SecOps Dispatch
+ */
+export async function triggerFastnQuarantineWorkflow(payload: {
+  agentId: string;
+  threatType: string;
+  reason: string;
+  dispatchTarget?: string;
+}) {
+  try {
+    const res = await fetch(`${API_BASE}/api/fastn/workflow/quarantine-dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Fastn Workflow 2 Error:', err);
+    return null;
+  }
+}
+
+/**
+ * Automated Workflow 3: Fastn Egress Scrubbing & Merkle Integrity Verification
+ */
+export async function triggerFastnVerifyEgressWorkflow(payload: {
+  agentId: string;
+  partition?: string;
+  limit?: number;
+}) {
+  try {
+    const res = await fetch(`${API_BASE}/api/fastn/workflow/verify-egress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Fastn Workflow 3 Error:', err);
+    return null;
+  }
+}
+

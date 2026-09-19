@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from database import init_db
-from routers import sentinel, agents, memories, blocks, threats, audit, policies, copilot, kpis
+from routers import sentinel, agents, memories, blocks, threats, audit, policies, copilot, kpis, fastn
 
 
 # ─── Lifespan: DB init on startup ────────────────────────────────────────────
@@ -73,6 +73,7 @@ app.include_router(audit.router)
 app.include_router(policies.router)
 app.include_router(copilot.router)
 app.include_router(kpis.router)
+app.include_router(fastn.router)
 
 
 # ─── Health check ────────────────────────────────────────────────────────────
