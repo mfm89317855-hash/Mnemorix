@@ -1,0 +1,7 @@
+{
+  "name": "MNEMORIX - Autonomous AI Memory Sentinel & Firewall",
+  "description": "Trust Memory. Verify Everything. Aesthetic, zero-trust cybersecurity firewall and tamper-evident cryptographic hash-chain suite for AI agent memory systems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
