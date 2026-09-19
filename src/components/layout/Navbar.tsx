@@ -71,16 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
               className="flex items-center space-x-3 cursor-pointer group"
               onClick={() => { soundClick(); setActiveTab('dashboard'); }}
             >
-              <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl shadow-md transition-all duration-300 ${
+              <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl shadow-md transition-all duration-300 overflow-hidden ${
                 isChainCompromised
-                  ? 'bg-red-600 shadow-red-500/30 glow-red'
-                  : 'bg-red-600 shadow-red-500/20 group-hover:shadow-red-500/40'
+                  ? 'shadow-red-500/30 glow-red ring-2 ring-red-500'
+                  : 'shadow-red-500/20 group-hover:shadow-red-500/40'
               }`}>
-                {isChainCompromised ? (
-                  <ShieldAlert className="h-5 w-5 animate-pulse text-white" />
-                ) : (
-                  <Shield className="h-5 w-5 text-white transition-transform group-hover:scale-110" />
-                )}
+                <img src="/logo.jpg" alt="MNEMORIX Logo" className="h-full w-full object-cover" />
                 {isChainCompromised && (
                   <span className="absolute inset-0 rounded-xl bg-red-500 animate-ping opacity-30" />
                 )}

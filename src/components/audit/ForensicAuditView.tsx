@@ -11,6 +11,7 @@ import {
   Check,
   FileText,
   ShieldAlert,
+  Skull,
 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import { truncateHash } from '../../lib/crypto';
@@ -21,7 +22,7 @@ import { HackerIntrusionLog } from './HackerIntrusionLog';
 
 export const ForensicAuditView: React.FC = () => {
   const { auditLogs, threatEvents, setIsComplianceModalOpen } = useSentinel();
-  const [activeSubTab, setActiveSubTab] = useState<'threats' | 'audit_trail' | 'hacker_terminal'>('hacker_terminal');
+  const [activeSubTab, setActiveSubTab] = useState<'threats' | 'audit_trail' | 'intrusion'>('threats');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedThreat, setSelectedThreat] = useState<ThreatEvent | null>(threatEvents[0] || null);
@@ -134,18 +135,6 @@ export const ForensicAuditView: React.FC = () => {
       {/* View Switcher: Threat War Room vs Audit Log Table */}
       <div className="flex space-x-2 border-b border-slate-200 pb-3">
         <button
-          onClick={() => { soundClick(); setActiveSubTab('hacker_terminal'); }}
-          className={`flex items-center space-x-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all ${
-            activeSubTab === 'hacker_terminal'
-              ? 'bg-red-600 text-white shadow-xs'
-              : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-          }`}
-        >
-          <Terminal className="h-4 w-4" />
-          <span>Live Hacker Breach Log (Simulated APT)</span>
-        </button>
-
-        <button
           onClick={() => { soundClick(); setActiveSubTab('threats'); }}
           className={`flex items-center space-x-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all ${
             activeSubTab === 'threats'
@@ -168,10 +157,19 @@ export const ForensicAuditView: React.FC = () => {
           <Lock className="h-4 w-4" />
           <span>Immutable Ledger ({auditLogs.length})</span>
         </button>
-      </div>
 
-      {/* Subtab 0: Live Hacker Intrusion Terminal */}
-      {activeSubTab === 'hacker_terminal' && <HackerIntrusionLog />}
+        <button
+          onClick={() => { soundClick(); setActiveSubTab('intrusion'); }}
+          className={`flex items-center space-x-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all ${
+            activeSubTab === 'intrusion'
+              ? 'bg-red-600 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+          }`}
+        >
+          <Skull className="h-4 w-4" />
+          <span>Hacker Intrusion Log</span>
+        </button>
+      </div>
 
       {/* Subtab 1: Threat Incident War Room */}
       {activeSubTab === 'threats' && (
@@ -363,6 +361,11 @@ export const ForensicAuditView: React.FC = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Subtab 3: Hacker Intrusion Log */}
+      {activeSubTab === 'intrusion' && (
+        <HackerIntrusionLog />
       )}
 
     </div>
