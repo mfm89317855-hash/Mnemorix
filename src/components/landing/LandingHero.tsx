@@ -13,6 +13,16 @@ const PRESETS = [
 
 type Result = { threatDetected: boolean; threatScore: number; verdict: string; sanitized: string; };
 
+const heroSequence = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.08 } },
+};
+
+const heroItem = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.46 } },
+};
+
 export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => {
   const [payload, setPayload] = useState(PRESETS[0].payload);
   const [scanning, setScanning] = useState(false);
@@ -45,24 +55,35 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
     <>
       <section className="hero">
         <div className="site-container hero-grid">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="hero-eyebrow">Memory firewall online</div>
-            <h1>Security controls for <span>agent memory.</span></h1>
-            <p className="hero-copy">
+          <motion.div variants={heroSequence} initial="hidden" animate="visible">
+            <motion.div className="hero-eyebrow" variants={heroItem}>Memory firewall online</motion.div>
+            <motion.h1 variants={heroItem}>Security controls for <span>agent memory.</span></motion.h1>
+            <motion.p className="hero-copy" variants={heroItem}>
               Inspect every memory write before it reaches long-term context. Block hostile instructions, monitor semantic drift, and verify history with a signed hash chain.
-            </p>
-            <div className="hero-actions">
-              <button className="ui-button" onClick={() => { soundClick(); onLaunchConsole(); }}>Open command center <ArrowRight className="h-4 w-4" /></button>
-              <a className="ui-button-secondary" href="#workflow">See how inspection works</a>
-            </div>
-            <div className="hero-note">
+            </motion.p>
+            <motion.div className="hero-actions" variants={heroItem}>
+              <motion.button className="ui-button" onClick={() => { soundClick(); onLaunchConsole(); }} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>Open command center <ArrowRight className="h-4 w-4" /></motion.button>
+              <motion.a className="ui-button-secondary" href="#workflow" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>See how inspection works</motion.a>
+            </motion.div>
+            <motion.div className="hero-note" variants={heroItem}>
               <span><Check /> Pre-commit inspection</span>
               <span><Check /> Tamper evidence</span>
               <span><Check /> Policy enforcement</span>
-            </div>
+            </motion.div>
           </motion.div>
 
-          <motion.div className="inspection-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .1 }}>
+          <motion.div className="inspection-card" initial={{ opacity: 0, x: 26, scale: 0.985 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: 0.18, duration: 0.52 }} whileHover={{ y: -4 }}>
+            <AnimatePresence>
+              {scanning && (
+                <motion.div
+                  className="inspection-scanline"
+                  initial={{ top: '12%', opacity: 0 }}
+                  animate={{ top: '88%', opacity: [0, 1, 1, 0] }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.58, ease: 'linear' }}
+                />
+              )}
+            </AnimatePresence>
             <div className="inspection-head">
               <div><strong>Memory inspection</strong><small>Write request / mem_84a2</small></div>
               <div className="live-state"><i /> Monitoring</div>
@@ -76,11 +97,19 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
               <label className="field-label" htmlFor="memory-payload">Proposed memory</label>
               <textarea id="memory-payload" className="payload-field" value={payload} onChange={(event) => setPayload(event.target.value)} />
               <div className="inspection-steps">
-                {['Pattern', 'Vector', 'Semantic', 'Signature'].map((step) => <span key={step}>{step}</span>)}
+                {['Pattern', 'Vector', 'Semantic', 'Signature'].map((step, index) => (
+                  <motion.span
+                    key={step}
+                    animate={scanning ? { opacity: [0.45, 1, 0.45], y: [0, -2, 0] } : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.42, delay: index * 0.1 }}
+                  >
+                    {step}
+                  </motion.span>
+                ))}
               </div>
-              <button className="inspect-button" onClick={inspect} disabled={scanning}>
+              <motion.button className="inspect-button" onClick={inspect} disabled={scanning} whileHover={scanning ? undefined : { scale: 1.01 }} whileTap={scanning ? undefined : { scale: 0.985 }}>
                 {scanning ? 'Inspecting write' : 'Inspect write'} <ArrowRight className="h-4 w-4" />
-              </button>
+              </motion.button>
               <AnimatePresence mode="wait">
                 {result && (
                   <motion.div key={result.threatDetected ? 'danger' : 'safe'} className={`verdict ${result.threatDetected ? 'danger' : 'safe'}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -99,13 +128,17 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
         </div>
       </section>
 
-      <div className="capability-strip">
+      <motion.div className="capability-strip" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.4 }}>
         <div className="site-container capability-grid">
           {[
             ['01', 'Pattern inspection'], ['02', 'Vector drift analysis'], ['03', 'Semantic intent review'], ['04', 'Signed memory ledger'],
-          ].map(([index, label]) => <div key={index}><span>{index}</span><strong>{label}</strong></div>)}
+          ].map(([index, label], itemIndex) => (
+            <motion.div key={index} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: itemIndex * 0.07 }}>
+              <span>{index}</span><strong>{label}</strong>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };

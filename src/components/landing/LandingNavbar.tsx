@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { soundClick } from '../../lib/sound';
+import { MnemorixMark } from '../brand/MnemorixMark';
 
 interface LandingNavbarProps { onLaunchConsole: () => void; }
 
@@ -12,7 +13,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLaunchConsole })
     <header className="site-nav">
       <div className="site-container site-nav-inner">
         <button className="brand-lockup" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Mnemorix home">
-          <span className="brand-mark">M</span>
+          <span className="brand-mark"><MnemorixMark /></span>
           <span className="text-left">
             <span className="brand-name">MNEMORIX</span>
             <span className="brand-subtitle">Agent memory security</span>

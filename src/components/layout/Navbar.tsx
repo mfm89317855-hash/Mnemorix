@@ -4,6 +4,7 @@ import { useSentinel } from '../../context/SentinelContext';
 import { useAuth } from '../../context/AuthContext';
 import { FastnModal } from './FastnModal';
 import { isSoundMuted, soundChainVerified, soundClick, toggleSoundMute } from '../../lib/sound';
+import { MnemorixMark } from '../brand/MnemorixMark';
 
 interface NavbarProps { onBackToLanding?: () => void; }
 
@@ -27,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
         <div className="console-nav-inner">
           <div className="flex items-center gap-3">
             <button className="console-brand" onClick={() => { soundClick(); setActiveTab('dashboard'); }}>
-              <span className="brand-mark">M</span>
+              <span className="brand-mark"><MnemorixMark /></span>
               <span className="console-brand-copy"><strong>MNEMORIX</strong><span>Agent memory security</span></span>
             </button>
             {onBackToLanding && <button className="console-action" onClick={() => { soundClick(); onBackToLanding(); }} title="Product overview"><Home /><span>Overview</span></button>}

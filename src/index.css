@@ -126,11 +126,13 @@
 
 /* Public website */
 .site-shell { background: #e9edf2; }
+.site-scroll-progress { position: fixed; inset: 0 0 auto; z-index: 80; height: 2px; transform-origin: 0 50%; background: #ef5b5b; }
 .site-nav { position: sticky; top: 0; z-index: 40; background: rgba(242,245,248,.95); border-bottom: 1px solid #d7dde5; backdrop-filter: blur(14px); }
 .site-container { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
 .site-nav-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .brand-lockup { display: flex; align-items: center; gap: 10px; }
 .brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 7px; background: #1d2939; color: #fff; font: 600 12px/1 'IBM Plex Mono', monospace; }
+.brand-mark svg { width: 24px; height: 24px; }
 .brand-name { display: block; color: var(--ink); font: 700 13px/1 'IBM Plex Sans', sans-serif; letter-spacing: .12em; }
 .brand-subtitle { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
 .site-links { display: flex; align-items: center; gap: 28px; }
@@ -150,7 +152,8 @@
 .hero-note span { display: flex; align-items: center; gap: 6px; }
 .hero-note svg { width: 13px; color: var(--success); }
 
-.inspection-card { overflow: hidden; border: 1px solid #cbd3dc; border-radius: 12px; background: #f9fafb; box-shadow: 0 20px 50px rgba(16,24,40,.11); }
+.inspection-card { position: relative; overflow: hidden; border: 1px solid #cbd3dc; border-radius: 12px; background: #f9fafb; box-shadow: 0 20px 50px rgba(16,24,40,.11); }
+.inspection-scanline { position: absolute; z-index: 5; left: 0; right: 0; height: 1px; pointer-events: none; background: #ef5b5b; box-shadow: 0 0 12px 2px rgba(239,91,91,.48); }
 .inspection-head, .inspection-foot { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fafbfc; border-bottom: 1px solid var(--line); }
 .inspection-head strong { display: block; font-size: 12px; }
 .inspection-head small { color: var(--muted); font: 500 9px/1.4 'IBM Plex Mono', monospace; }
