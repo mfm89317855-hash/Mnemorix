@@ -169,7 +169,7 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     {
       id: 'msg_01',
       sender: 'sentinel',
-      text: `👋 **MNEMORIX Sentinel Copilot Active.**\n\nI am monitoring connected agent nodes and verifying cryptographic Merkle hash chains. How can I assist with memory firewall rules, threat triage, or compliance audits today?`,
+      text: `**MNEMORIX Sentinel Copilot Active.**\n\nI am monitoring connected agent nodes and verifying cryptographic Merkle hash chains. How can I assist with memory firewall rules, threat triage, or compliance audits today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

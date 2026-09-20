@@ -121,7 +121,7 @@ export const MerkleChainExplorer: React.FC = () => {
               className="flex items-center space-x-1.5 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-mono font-bold text-white shadow-md shadow-red-500/20 transition-all active:scale-95 glow-red animate-pulse"
             >
               <Zap className="h-3.5 w-3.5" />
-              <span>Restore Canonical Chain ⚡</span>
+              <span>Restore canonical chain</span>
             </button>
           ) : (
             <div className="flex items-center space-x-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-mono text-emerald-700 font-bold shadow-xs">
@@ -136,7 +136,7 @@ export const MerkleChainExplorer: React.FC = () => {
       {/* ── Explanatory Banner ── */}
       <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
         <p className="text-slate-700 leading-relaxed font-sans">
-          <strong className="text-amber-700 font-mono">🔴 Tamper Simulation Testbed:</strong>{' '}
+          <strong className="text-amber-700 font-mono">Tamper simulation testbed:</strong>{' '}
           Click <span className="text-red-600 font-mono font-bold">"Simulate Tamper"</span> on any block below to simulate unauthorized memory modification. Watch the SHA-256 Merkle root break in real-time, then trigger the automated self-healing protocol!
         </p>
         <span className="badge-amber whitespace-nowrap">Red Team Mode</span>
@@ -186,7 +186,7 @@ export const MerkleChainExplorer: React.FC = () => {
                     <div>
                       <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                         <h3 className="font-display font-bold text-slate-900 text-sm">
-                          {isGenesis ? '⚓ GENESIS BLOCK — Merkle Anchor' : `Memory Commit — ${block.agentName}`}
+                          {isGenesis ? 'GENESIS BLOCK / Merkle anchor' : `Memory commit / ${block.agentName}`}
                         </h3>
                         {isTampered ? (
                           <span className={`rounded-lg px-2 py-0.5 text-[9px] font-mono font-bold border ${
@@ -194,7 +194,7 @@ export const MerkleChainExplorer: React.FC = () => {
                               ? 'bg-red-200 text-red-800 border-red-300'
                               : 'bg-amber-100 text-amber-800 border-amber-200'
                           }`}>
-                            {isCompromiseOrigin ? '🚨 TAMPER ORIGIN' : '⚠️ CHAIN INVALID'}
+                            {isCompromiseOrigin ? 'TAMPER ORIGIN' : 'CHAIN INVALID'}
                           </span>
                         ) : (
                           <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[9px] font-mono font-bold text-emerald-700 border border-emerald-200">
@@ -260,7 +260,7 @@ export const MerkleChainExplorer: React.FC = () => {
                         onClick={() => handleApplyTamper(block.blockNumber)}
                         className="rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 text-xs font-mono font-bold shadow-sm transition-all active:scale-95"
                       >
-                        ⚡ Inject Mutated Memory
+                        Inject mutated memory
                       </button>
                     </div>
                   </div>

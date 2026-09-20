@@ -97,7 +97,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onLaunchConsole })
 
         {/* Bottom Bar */}
         <div className="mt-14 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
-          <p>© {new Date().getFullYear()} MNEMORIX Sentinel. All rights reserved. Sovereign Zero-Trust AI Memory Architecture.</p>
+          <p>{new Date().getFullYear()} MNEMORIX Sentinel. Zero-trust AI memory architecture.</p>
           <div className="flex items-center space-x-4">
             <span className="text-red-400 font-bold">SHA-256 Verified</span>
             <span>•</span>

@@ -258,7 +258,7 @@ Respond in concise, professional, cyber-grade markdown. Use structured bullet po
   // Heuristic intelligent fallback responses
   const q = message.toLowerCase();
   if (q.includes('merkle') || q.includes('hash') || q.includes('tamper')) {
-    return `### 🛡️ Merkle DAG & Hash-Chain Architecture
+    return `### Merkle DAG & Hash-Chain Architecture
 
 MNEMORIX protects autonomous agent memory stores via **Cryptographic SHA-256 Commit Anchors**:
 
@@ -269,7 +269,7 @@ MNEMORIX protects autonomous agent memory stores via **Cryptographic SHA-256 Com
   }
 
   if (q.includes('injection') || q.includes('prompt') || q.includes('attack')) {
-    return `### 🚨 Indirect Prompt Injection & Memory Poisoning Defense
+    return `### Indirect Prompt Injection & Memory Poisoning Defense
 
 MNEMORIX implements a **3-Layer Defense Filter**:
 
@@ -279,7 +279,7 @@ MNEMORIX implements a **3-Layer Defense Filter**:
   }
 
   if (q.includes('compliance') || q.includes('soc2') || q.includes('nist') || q.includes('iso')) {
-    return `### 📜 Compliance & AI Safety Governance
+    return `### Compliance & AI Safety Governance
 
 MNEMORIX automatically fulfills key enterprise compliance standards:
 
@@ -290,7 +290,7 @@ MNEMORIX automatically fulfills key enterprise compliance standards:
 You can generate and export a certified audit compliance report from the **Forensic Audit & War Room** tab.`;
   }
 
-  return `### 🤖 MNEMORIX Sentinel System Advisory
+  return `### MNEMORIX Sentinel System Advisory
 
 I am continuously monitoring all active agent memory partitions (**Episodic, Semantic, Procedural, Working**).
 

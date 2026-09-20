@@ -46,10 +46,10 @@ export const ThreatRadarChart: React.FC = () => {
           </div>
           <div>
             <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
-              {chartView === 'radar' ? 'Security Posture Radar' : 'Vector Drift Telemetry'}
+              {chartView === 'radar' ? 'Security coverage' : 'Vector drift'}
             </h3>
             <p className="text-[11px] font-mono text-slate-400">
-              {chartView === 'radar' ? 'Multi-dimensional defense coverage' : 'Historical Cosine Divergence Trend'}
+              {chartView === 'radar' ? 'Control coverage by detection category' : 'Historical cosine divergence'}
             </p>
           </div>
         </div>
@@ -83,11 +83,11 @@ export const ThreatRadarChart: React.FC = () => {
       <div className="flex-1 min-h-[260px] w-full flex items-center justify-center">
         {chartView === 'radar' ? (
           <ResponsiveContainer width="100%" height={260}>
-            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+            <RadarChart cx="50%" cy="50%" outerRadius="58%" data={radarData} margin={{ top: 18, right: 44, bottom: 18, left: 44 }}>
               <PolarGrid stroke="rgba(148, 163, 184, 0.15)" />
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fill: '#94A3B8', fontSize: 10, fontFamily: 'Plus Jakarta Sans', fontWeight: 600 }}
+                tick={{ fill: '#667085', fontSize: 9, fontFamily: 'Plus Jakarta Sans', fontWeight: 600 }}
               />
               <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(148, 163, 184, 0.2)" />
               <Radar
@@ -137,7 +137,7 @@ export const ThreatRadarChart: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[11px] font-mono">
         {agents.map((agent) => (
           <div key={agent.id} className="flex items-center space-x-1.5 text-slate-400">
-            <span>{agent.avatar}</span>
+            <span className="agent-initials">{agent.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span>
             <span className="truncate">{agent.name}:</span>
             <strong className="text-red-400 font-bold">{agent.integrityScore}%</strong>
           </div>

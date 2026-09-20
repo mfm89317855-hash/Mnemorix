@@ -62,7 +62,7 @@ export const LiveMemoryStream: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
-                Live Memory Ingestion Stream
+                Memory events
               </h3>
               <span className="inline-flex items-center space-x-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -70,7 +70,7 @@ export const LiveMemoryStream: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] font-mono text-slate-400">
-              SHA-256 cryptographic verification event stream with real-time vector delta analysis
+              Inspected writes and verification decisions
             </p>
           </div>
         </div>

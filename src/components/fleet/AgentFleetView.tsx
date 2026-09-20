@@ -39,7 +39,7 @@ export const AgentFleetView: React.FC = () => {
   const [agentNameInput, setAgentNameInput] = useState('');
   const [codeNameInput, setCodeNameInput] = useState('');
   const [roleInput, setRoleInput] = useState('');
-  const [avatarInput, setAvatarInput] = useState('🤖');
+  const [avatarInput, setAvatarInput] = useState('AG');
   const [modelInput, setModelInput] = useState('Gemini 2.5 Flash');
 
   const activeAgent = selectedAgent || agents[0];
@@ -82,7 +82,7 @@ export const AgentFleetView: React.FC = () => {
       name: agentNameInput.trim().toUpperCase(),
       codeName: codeNameInput.trim() || 'Custom Sentinel Node',
       role: roleInput.trim() || 'Autonomous SecOps Agent',
-      avatar: avatarInput.trim() || '🤖',
+      avatar: avatarInput.trim() || 'AG',
       model: modelInput.trim() || 'Gemini 2.5 Flash',
       status: 'shielded',
     });
@@ -149,7 +149,7 @@ export const AgentFleetView: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <span className="text-2xl">{agent.avatar}</span>
+                    <span className="agent-initials">{agent.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span>
                     <div>
                       <h4 className="font-display text-xs font-bold text-slate-900">{agent.name}</h4>
                       <p className="text-[10px] font-mono text-slate-500">{agent.codeName}</p>
@@ -173,7 +173,7 @@ export const AgentFleetView: React.FC = () => {
       <div className="white-red-card p-5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div className="flex items-center space-x-3.5">
-            <span className="text-3xl">{activeAgent.avatar}</span>
+            <span className="agent-initials agent-initials-large">{activeAgent.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span>
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="font-display text-base font-bold text-slate-900">{activeAgent.name}</h3>
@@ -372,7 +372,7 @@ export const AgentFleetView: React.FC = () => {
                   disabled={!newContent.trim() || isSubmitting}
                   className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-mono font-bold text-white shadow-md shadow-red-500/20 disabled:opacity-40 transition-all active:scale-95"
                 >
-                  {isSubmitting ? 'Anchoring...' : 'Commit & Seal Block ⛓️'}
+                  {isSubmitting ? 'Anchoring...' : 'Commit and seal block'}
                 </button>
               </div>
             </form>
@@ -412,12 +412,12 @@ export const AgentFleetView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-mono text-slate-700 font-semibold block mb-1">Avatar Symbol / Emoji</label>
+                  <label className="text-xs font-mono text-slate-700 font-semibold block mb-1">Node initials</label>
                   <input
                     type="text"
                     value={avatarInput}
                     onChange={(e) => setAvatarInput(e.target.value)}
-                    placeholder="🤖"
+                    placeholder="AG"
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-red-500 focus:bg-white"
                   />
                 </div>
@@ -469,7 +469,7 @@ export const AgentFleetView: React.FC = () => {
                   disabled={!agentNameInput.trim()}
                   className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-mono font-bold text-white shadow-md shadow-red-500/20 disabled:opacity-40 transition-all active:scale-95"
                 >
-                  Deploy Node 🚀
+                  Deploy node
                 </button>
               </div>
             </form>

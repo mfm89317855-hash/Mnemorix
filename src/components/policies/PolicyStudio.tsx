@@ -194,12 +194,12 @@ export const PolicyStudio: React.FC = () => {
         {testResult && (
           <div
             className={`p-3.5 rounded-xl font-mono text-xs font-medium ${
-              testResult.startsWith('🚨')
+              testResult.includes('VIOLATION TRIGGERED')
                 ? 'bg-red-50 border border-red-300 text-red-900'
                 : 'bg-emerald-50 border border-emerald-300 text-emerald-900'
             }`}
           >
-            {testResult}
+            {testResult.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '')}
           </div>
         )}
       </div>
@@ -288,7 +288,7 @@ export const PolicyStudio: React.FC = () => {
                   disabled={!policyName.trim() || !policyDesc.trim()}
                   className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-mono font-bold text-white shadow-md shadow-red-500/20 disabled:opacity-40 transition-all active:scale-95"
                 >
-                  Publish Guardrail 🛡️
+                  Publish guardrail
                 </button>
               </div>
             </form>

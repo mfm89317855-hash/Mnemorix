@@ -143,7 +143,7 @@ fastn.on('agent:memory:beforeSave', async (event) => {
   const verdict = await response.json();
 
   if (verdict.decision === 'BLOCK') {
-    console.warn(\`🚨 [Fastn] Memory Ingestion Blocked: \${verdict.reason}\`);
+    console.warn(\`[Fastn] Memory ingestion blocked: \${verdict.reason}\`);
     throw new Error(\`MNEMORIX Sentinel Blocked Injection: \${verdict.reason}\`);
   }
 
@@ -233,8 +233,8 @@ fastn.on('agent:memory:beforeSave', async (event) => {
         {/* Subtabs Selector */}
         <div className="flex space-x-2 mb-4 shrink-0 overflow-x-auto pb-1">
           {[
-            { id: 'cloud', label: '☁️ Cloud Workflow (wf_f0e5443821f2)' },
-            { id: 'workflows', label: '⚡ 3 Automated Workflows' },
+            { id: 'cloud', label: 'Cloud workflow (wf_f0e5443821f2)' },
+            { id: 'workflows', label: '3 automated workflows' },
             { id: 'node', label: 'Fastn Node.js SDK' },
             { id: 'curl', label: 'cURL REST API' },
             { id: 'openapi', label: 'OpenAPI Spec' },
@@ -486,7 +486,7 @@ fastn.on('agent:memory:beforeSave', async (event) => {
                   }`}>
                     <div className="font-bold flex items-center justify-between">
                       <span>DECISION: {wf1Result.decision} ({wf1Result.rule_id})</span>
-                      <span>Stored: {wf1Result.stored ? 'YES ⛓️' : 'NO ❌'}</span>
+                      <span>Stored: {wf1Result.stored ? 'YES' : 'NO'}</span>
                     </div>
                     <div className="text-[11px] mt-1">Reason: {wf1Result.reason}</div>
                     {wf1Result.sanitized_content && (
@@ -577,7 +577,7 @@ fastn.on('agent:memory:beforeSave', async (event) => {
 
                 {wf3Result && (
                   <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-mono space-y-1 text-emerald-900">
-                    <div className="font-bold">STATUS: {wf3Result.status} | DAG INTACT: {wf3Result.is_dag_intact ? 'YES 🛡️' : 'NO ❌'}</div>
+                    <div className="font-bold">STATUS: {wf3Result.status} | DAG INTACT: {wf3Result.is_dag_intact ? 'YES' : 'NO'}</div>
                     <div className="text-[11px]">Memories Verified: {wf3Result.total_retrieved} | Entities Scrubbed: {wf3Result.scrubbed_count}</div>
                     <div className="text-[10px] text-slate-500 truncate">Merkle Root: {wf3Result.merkle_root}</div>
                   </div>

@@ -149,7 +149,7 @@ export const FirewallPlayground: React.FC = () => {
       author: 'Security Analyst (UI Testbed)',
       vectorDriftDelta: 0.002,
     });
-    alert('✅ Verified memory sealed into Merkle ledger!');
+    alert('Verified memory sealed into the Merkle ledger.');
   };
 
   const layerConfig = [
@@ -184,7 +184,7 @@ export const FirewallPlayground: React.FC = () => {
       color: 'text-red-600',
       activeBg: 'border-red-400 bg-red-50/50',
       scanLabel: 'Neural Audit...',
-      doneLabel: '⚡ Verdict Ready',
+      doneLabel: 'Verdict ready',
     },
   ];
 
@@ -287,7 +287,7 @@ export const FirewallPlayground: React.FC = () => {
                   className="field-input"
                 >
                   {agents.map((a) => (
-                    <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
+                    <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
                 </select>
               </div>
@@ -332,7 +332,7 @@ export const FirewallPlayground: React.FC = () => {
               ) : (
                 <>
                   <Play className="h-4 w-4 fill-current" />
-                  <span>Execute Neural Firewall Inspection 🛡️</span>
+                  <span>Run firewall inspection</span>
                 </>
               )}
             </button>
@@ -466,7 +466,7 @@ export const FirewallPlayground: React.FC = () => {
                   onClick={handleCommitCleanMemory}
                   className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-mono font-bold py-2.5 text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]"
                 >
-                  ⛓️ Seal & Append to SHA-256 Merkle Ledger
+                  Seal and append to SHA-256 Merkle ledger
                 </button>
               )}
             </div>
