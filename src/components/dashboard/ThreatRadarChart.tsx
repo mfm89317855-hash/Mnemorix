@@ -13,6 +13,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { Radio } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSentinel } from '../../context/SentinelContext';
 
 export const ThreatRadarChart: React.FC = () => {
@@ -37,42 +38,34 @@ export const ThreatRadarChart: React.FC = () => {
   ];
 
   return (
-    <div className="glass-card p-5 flex flex-col h-full shadow-lg">
+    <section className="panel dashboard-panel coverage-panel">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="panel-head">
         <div className="flex items-center space-x-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+          <div className="panel-icon">
             <Radio className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
+            <h3>
               {chartView === 'radar' ? 'Security coverage' : 'Vector drift'}
             </h3>
-            <p className="text-[11px] font-mono text-slate-400">
+            <p>
               {chartView === 'radar' ? 'Control coverage by detection category' : 'Historical cosine divergence'}
             </p>
           </div>
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+        <div className="segmented-control" aria-label="Coverage chart view">
           <button
             onClick={() => setChartView('radar')}
-            className={`rounded px-2.5 py-1 text-[11px] font-mono font-bold transition-all ${
-              chartView === 'radar'
-                ? 'bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className={chartView === 'radar' ? 'active' : ''}
           >
             Radar
           </button>
           <button
             onClick={() => setChartView('drift')}
-            className={`rounded px-2.5 py-1 text-[11px] font-mono font-bold transition-all ${
-              chartView === 'drift'
-                ? 'bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className={chartView === 'drift' ? 'active' : ''}
           >
             Vector Drift
           </button>
@@ -80,27 +73,31 @@ export const ThreatRadarChart: React.FC = () => {
       </div>
 
       {/* Chart Canvas */}
-      <div className="flex-1 min-h-[260px] w-full flex items-center justify-center">
+      <div className="chart-canvas">
+        <AnimatePresence mode="wait" initial={false}>
         {chartView === 'radar' ? (
+          <motion.div className="chart-view" key="radar" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart cx="50%" cy="50%" outerRadius="58%" data={radarData} margin={{ top: 18, right: 44, bottom: 18, left: 44 }}>
-              <PolarGrid stroke="rgba(148, 163, 184, 0.15)" />
+              <PolarGrid stroke="#dfe3e8" />
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fill: '#667085', fontSize: 9, fontFamily: 'Plus Jakarta Sans', fontWeight: 600 }}
+                tick={{ fill: '#596273', fontSize: 10, fontFamily: 'IBM Plex Sans', fontWeight: 500 }}
               />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(148, 163, 184, 0.2)" />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#dfe3e8" tick={{ fill: '#8a94a3', fontSize: 9 }} />
               <Radar
                 name="Security Score"
                 dataKey="A"
                 stroke="#EF4444"
                 strokeWidth={2}
                 fill="#EF4444"
-                fillOpacity={0.25}
+                fillOpacity={0.1}
               />
             </RadarChart>
           </ResponsiveContainer>
+          </motion.div>
         ) : (
+          <motion.div className="chart-view" key="drift" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={driftTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -113,36 +110,38 @@ export const ThreatRadarChart: React.FC = () => {
                   <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" stroke="#475569" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-              <YAxis stroke="#475569" tick={{ fontSize: 10, fill: '#94A3B8' }} />
+              <XAxis dataKey="time" stroke="#d0d5dd" tick={{ fontSize: 10, fill: '#667085', fontFamily: 'IBM Plex Mono' }} />
+              <YAxis stroke="#d0d5dd" tick={{ fontSize: 10, fill: '#667085', fontFamily: 'IBM Plex Mono' }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#0F172A',
-                  borderColor: 'rgba(239, 68, 68, 0.3)',
-                  borderRadius: '0.75rem',
+                  backgroundColor: '#ffffff',
+                  borderColor: '#d0d5dd',
+                  borderRadius: '8px',
                   fontSize: '11px',
-                  fontFamily: 'JetBrains Mono',
-                  color: '#F8FAFC',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                  fontFamily: 'IBM Plex Mono',
+                  color: '#16181d',
+                  boxShadow: '0 10px 28px rgba(16,24,40,.12)',
                 }}
               />
               <Area type="monotone" dataKey="alpha" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorAlpha)" name="SENTINEL-ALPHA" />
               <Area type="monotone" dataKey="aether" stroke="#F59E0B" strokeWidth={2} fillOpacity={1} fill="url(#colorAether)" name="AETHER-DEV" />
             </AreaChart>
           </ResponsiveContainer>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
       {/* Fleet Legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[11px] font-mono">
+      <div className="coverage-legend">
         {agents.map((agent) => (
-          <div key={agent.id} className="flex items-center space-x-1.5 text-slate-400">
+          <div key={agent.id}>
             <span className="agent-initials">{agent.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}</span>
             <span className="truncate">{agent.name}:</span>
-            <strong className="text-red-400 font-bold">{agent.integrityScore}%</strong>
+            <strong>{agent.integrityScore}%</strong>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };

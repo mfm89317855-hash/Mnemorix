@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FileCheck2, Home, LogOut, PlugZap, RefreshCw, Settings, ShieldAlert, ShieldCheck, Sparkles, User, Volume2, VolumeX } from 'lucide-react';
+import { FileCheck2, Home, LogOut, MessageSquareText, PlugZap, RefreshCw, Settings, ShieldAlert, ShieldCheck, User, Volume2, VolumeX } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import { useAuth } from '../../context/AuthContext';
 import { FastnModal } from './FastnModal';
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                 <button className="console-action" onClick={() => { soundClick(); logout(); }} title="Sign out"><LogOut /></button>
               </>
             ) : <button className="console-action" onClick={() => { soundClick(); setIsAuthModalOpen(true); }}><User /><span>Sign in</span></button>}
-            <button className="console-action primary" onClick={() => { soundClick(); setIsCopilotOpen(!isCopilotOpen); }}><Sparkles /><span>Copilot</span></button>
+            <button className="console-action primary" onClick={() => { soundClick(); setIsCopilotOpen(!isCopilotOpen); }}><MessageSquareText /><span>Investigate</span></button>
           </div>
         </div>
       </header>

@@ -56,19 +56,19 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
       <section className="hero">
         <div className="site-container hero-grid">
           <motion.div variants={heroSequence} initial="hidden" animate="visible">
-            <motion.div className="hero-eyebrow" variants={heroItem}>Memory firewall online</motion.div>
-            <motion.h1 variants={heroItem}>Security controls for <span>agent memory.</span></motion.h1>
+            <motion.div className="hero-eyebrow" variants={heroItem}>Control plane / memory security</motion.div>
+            <motion.h1 variants={heroItem}>A security boundary for <span>agent memory.</span></motion.h1>
             <motion.p className="hero-copy" variants={heroItem}>
-              Inspect every memory write before it reaches long-term context. Block hostile instructions, monitor semantic drift, and verify history with a signed hash chain.
+              Inspect every write before it reaches persistent context. Enforce policy, contain hostile instructions, and preserve a signed record of every decision.
             </motion.p>
             <motion.div className="hero-actions" variants={heroItem}>
               <motion.button className="ui-button" onClick={() => { soundClick(); onLaunchConsole(); }} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>Open command center <ArrowRight className="h-4 w-4" /></motion.button>
               <motion.a className="ui-button-secondary" href="#workflow" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>See how inspection works</motion.a>
             </motion.div>
-            <motion.div className="hero-note" variants={heroItem}>
-              <span><Check /> Pre-commit inspection</span>
-              <span><Check /> Tamper evidence</span>
-              <span><Check /> Policy enforcement</span>
+            <motion.div className="hero-note" variants={heroItem} aria-label="Platform capabilities">
+              <span><Check /> Pre-commit enforcement</span>
+              <span><Check /> Signed audit evidence</span>
+              <span><Check /> Deployment control</span>
             </motion.div>
           </motion.div>
 
@@ -85,8 +85,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
               )}
             </AnimatePresence>
             <div className="inspection-head">
-              <div><strong>Memory inspection</strong><small>Write request / mem_84a2</small></div>
-              <div className="live-state"><i /> Monitoring</div>
+              <div><strong>Memory inspection</strong><small>Production / support-agent / mem_84a2</small></div>
+              <div className="live-state"><i /> Enforcement active</div>
             </div>
             <div className="inspection-content">
               <div className="preset-tabs">
@@ -112,7 +112,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onLaunchConsole }) => 
               </motion.button>
               <AnimatePresence mode="wait">
                 {result && (
-                  <motion.div key={result.threatDetected ? 'danger' : 'safe'} className={`verdict ${result.threatDetected ? 'danger' : 'safe'}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <motion.div aria-live="polite" key={result.threatDetected ? 'danger' : 'safe'} className={`verdict ${result.threatDetected ? 'danger' : 'safe'}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                     <div className="verdict-icon">{result.threatDetected ? <TriangleAlert /> : <ShieldCheck />}</div>
                     <div>
                       <div className="verdict-title"><strong>{result.threatDetected ? 'Write quarantined' : 'Write verified'}</strong><span>Risk {result.threatScore}/100</span></div>

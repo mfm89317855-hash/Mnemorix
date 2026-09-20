@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock3, Database, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useSentinel } from '../../context/SentinelContext';
 
 export const SentinelKpiCards: React.FC = () => {
@@ -13,9 +14,9 @@ export const SentinelKpiCards: React.FC = () => {
 
   return (
     <div className="overview-grid">
-      {metrics.map((metric) => {
+      {metrics.map((metric, index) => {
         const Icon = metric.icon;
-        return <div className="overview-metric" key={metric.label}><div className="overview-metric-head"><span>{metric.label}</span><Icon className={metric.tone || ''} /></div><strong className={metric.tone || ''}>{metric.value}</strong><small>{metric.note}</small></div>;
+        return <motion.div className="overview-metric" key={metric.label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .05 }}><div className="overview-metric-head"><span>{metric.label}</span><Icon className={metric.tone || ''} /></div><strong className={metric.tone || ''}>{metric.value}</strong><small>{metric.note}</small></motion.div>;
       })}
     </div>
   );

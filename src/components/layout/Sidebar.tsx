@@ -25,7 +25,7 @@ export const Sidebar: React.FC = () => {
           const Icon = item.icon;
           const active = activeTab === item.id;
           return (
-            <button key={item.id} className={`sidebar-link ${active ? 'active' : ''}`} onClick={() => { soundClick(); setActiveTab(item.id); }}>
+            <button key={item.id} className={`sidebar-link ${active ? 'active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => { soundClick(); setActiveTab(item.id); }}>
               <span className="sidebar-icon"><Icon /></span>
               <span className="sidebar-copy"><strong>{item.label}</strong><small>{item.note}</small></span>
               {item.badge !== undefined && <span className={isChainCompromised && item.id === 'hashchain' ? 'badge-red' : 'badge-slate'}>{item.badge}</span>}
