@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -15,6 +15,9 @@ import {
   Home,
   LogOut,
   Lock,
+  User,
+  ChevronDown,
+  CheckCircle2,
 } from 'lucide-react';
 import { useSentinel } from '../../context/SentinelContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +44,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
   const { user, setIsAuthModalOpen, logout } = useAuth();
   const [isFastnModalOpen, setIsFastnModalOpen] = useState(false);
   const [muted, setMuted] = useState(isSoundMuted());
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const apiKey = getStoredGeminiKey();
   const hasGeminiKey = Boolean(apiKey && apiKey.length > 5);
@@ -197,36 +213,122 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
               <Key className="h-3 w-3 opacity-60" />
             </button>
 
-            {/* Google User Avatar / Sign-In Button */}
+            {/* Sign In & Sign Out User Controls */}
             {user ? (
-              <div
-                onClick={() => { soundClick(); setIsAuthModalOpen(true); }}
-                className="flex items-center space-x-2 rounded-xl border border-red-200 bg-red-50/80 px-2 py-1 cursor-pointer hover:bg-red-100 transition-colors shadow-2xs"
-                title={`Logged in as ${user.displayName || user.email}`}
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || 'User'}
-                    className="h-6 w-6 rounded-full border border-red-300 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px]">
-                    {(user.displayName || 'U')[0].toUpperCase()}
+              <div className="relative" ref={userMenuRef}>
+                <div className="flex items-center space-x-1">
+                  {/* User Profile Trigger Button */}
+                  <button
+                    onClick={() => {
+                      soundClick();
+                      setIsUserMenuOpen(!isUserMenuOpen);
+                    }}
+                    className="flex items-center space-x-2 rounded-xl border border-red-200 bg-red-50/80 hover:bg-red-100/80 px-2 sm:px-2.5 py-1 transition-all shadow-2xs group"
+                    title={`Account: ${user.displayName || user.email}`}
+                  >
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName || 'User'}
+                        className="h-6 w-6 rounded-full border border-red-300 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px]">
+                        {(user.displayName || 'U')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-[11px] font-mono font-bold text-slate-800 hidden md:inline truncate max-w-[80px]">
+                      {user.displayName?.split(' ')[0]}
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-red-600 transition-colors" />
+                  </button>
+
+                  {/* Direct 1-Click Sign Out Quick Action */}
+                  <button
+                    onClick={() => {
+                      soundClick();
+                      logout();
+                    }}
+                    title="Sign Out from Active Session"
+                    className="flex items-center justify-center h-8 w-8 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-300 text-slate-500 hover:text-red-600 transition-all shadow-2xs"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border-2 border-red-500/20 bg-white p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 font-mono text-xs">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 mb-2">
+                      <div className="flex items-center space-x-2">
+                        {user.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt=""
+                            className="h-8 w-8 rounded-full border border-red-300 object-cover"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs">
+                            {(user.displayName || 'U')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-900 truncate">
+                            {user.displayName}
+                          </div>
+                          <div className="text-[10px] text-slate-500 truncate">
+                            {user.email}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500">Clearance:</span>
+                        <span className="rounded bg-red-100 text-red-700 font-bold px-1.5 py-0.2 border border-red-200">
+                          LEVEL-4 SEC-OPS
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          soundClick();
+                          setIsUserMenuOpen(false);
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left text-[11px]"
+                      >
+                        <User className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Account Details & Keys</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          soundClick();
+                          setIsUserMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-red-600 hover:bg-red-50 transition-colors text-left text-[11px] font-bold"
+                      >
+                        <LogOut className="h-3.5 w-3.5 text-red-600" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   </div>
                 )}
-                <span className="text-[11px] font-mono font-bold text-slate-800 hidden md:inline truncate max-w-[80px]">
-                  {user.displayName?.split(' ')[0]}
-                </span>
               </div>
             ) : (
+              /* Sign In Button */
               <button
-                onClick={() => { soundClick(); setIsAuthModalOpen(true); }}
-                className="flex items-center space-x-1.5 rounded-xl border border-slate-300 bg-white hover:border-red-400 hover:bg-red-50/40 px-2.5 py-1.5 text-xs font-mono font-semibold text-slate-700 transition-all shadow-2xs"
-                title="Sign in with Google"
+                onClick={() => {
+                  soundClick();
+                  setIsAuthModalOpen(true);
+                }}
+                className="flex items-center space-x-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300 px-3 py-1.5 text-xs font-mono font-bold text-red-700 transition-all shadow-2xs active:scale-95"
+                title="Sign In to MNEMORIX Sentinel"
               >
-                <Lock className="h-3.5 w-3.5 text-red-600" />
-                <span className="hidden sm:inline">Google Sign In</span>
+                <User className="h-3.5 w-3.5 text-red-600" />
+                <span>Sign In</span>
               </button>
             )}
 

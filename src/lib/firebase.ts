@@ -8,6 +8,9 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut as fbSignOut,
   onAuthStateChanged,
   User as FirebaseUser,
@@ -158,6 +161,137 @@ export async function signInWithGoogle(): Promise<AuthUserProfile> {
 
   // Demo Fallback Mode
   return getSimulatedDemoUser();
+}
+
+/**
+ * Enterprise SecOps Pre-configured Roles for Instant Demo Access
+ */
+export const PRESET_SECOPS_USERS: AuthUserProfile[] = [
+  {
+    uid: 'secops-sarah-chen',
+    displayName: 'Dr. Sarah Chen',
+    email: 'sarah.chen@sentinel.defense.ai',
+    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    organization: 'Sentinel Cyber Command',
+    role: 'Lead AI Red Teamer & SecOps',
+    lastLogin: new Date().toISOString(),
+    isDemo: true,
+  },
+  {
+    uid: 'secops-alex-mercer',
+    displayName: 'Alex Mercer',
+    email: 'alex.mercer@mnemorix.internal',
+    photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    organization: 'MNEMORIX Sovereign Defense',
+    role: 'Chief AI Safety Officer (Level 4)',
+    lastLogin: new Date().toISOString(),
+    isDemo: true,
+  },
+  {
+    uid: 'secops-marcus-vance',
+    displayName: 'Marcus Vance',
+    email: 'marcus.vance@audit.nist-soc2.org',
+    photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    organization: 'NIST AI RMF Audit Fleet',
+    role: 'Lead Compliance Auditor',
+    lastLogin: new Date().toISOString(),
+    isDemo: true,
+  },
+];
+
+/**
+ * Sign In with a 1-click Preset SecOps Role
+ */
+export async function signInWithDemoRole(roleUser: AuthUserProfile): Promise<AuthUserProfile> {
+  const profile: AuthUserProfile = {
+    ...roleUser,
+    lastLogin: new Date().toISOString(),
+    isDemo: true,
+  };
+  try {
+    localStorage.setItem(STORAGE_DEMO_USER, JSON.stringify(profile));
+  } catch {}
+  return profile;
+}
+
+/**
+ * Sign In with Email & Password (with Firebase or local fallback)
+ */
+export async function signInWithEmail(
+  email: string,
+  password: string,
+  displayName?: string,
+  role?: string
+): Promise<AuthUserProfile> {
+  const auth = getFirebaseAuth();
+
+  if (auth && isFirebaseConfigured()) {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const user = cred.user;
+      const profile: AuthUserProfile = {
+        uid: user.uid,
+        displayName: user.displayName || displayName || email.split('@')[0],
+        email: user.email,
+        photoURL: user.photoURL,
+        organization: 'MNEMORIX Sovereign Defense',
+        role: role || 'Enterprise SecOps Analyst',
+        lastLogin: new Date().toISOString(),
+        isDemo: false,
+      };
+      await syncUserToFirestore(profile);
+      return profile;
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          const user = cred.user;
+          if (displayName) {
+            await updateProfile(user, { displayName });
+          }
+          const profile: AuthUserProfile = {
+            uid: user.uid,
+            displayName: displayName || email.split('@')[0],
+            email: user.email,
+            photoURL: user.photoURL,
+            organization: 'MNEMORIX Sovereign Defense',
+            role: role || 'Enterprise SecOps Analyst',
+            lastLogin: new Date().toISOString(),
+            isDemo: false,
+          };
+          await syncUserToFirestore(profile);
+          return profile;
+        } catch (innerErr) {
+          console.warn('Firebase email auth creation fallback:', innerErr);
+        }
+      }
+    }
+  }
+
+  // Local Secure Session Fallback
+  const cleanName =
+    displayName ||
+    email
+      .split('@')[0]
+      .replace(/[._-]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const profile: AuthUserProfile = {
+    uid: `usr_${Math.random().toString(36).substring(2, 10)}`,
+    displayName: cleanName,
+    email,
+    photoURL: null,
+    organization: 'MNEMORIX Sovereign Defense',
+    role: role || 'Enterprise SecOps Analyst',
+    lastLogin: new Date().toISOString(),
+    isDemo: true,
+  };
+
+  try {
+    localStorage.setItem(STORAGE_DEMO_USER, JSON.stringify(profile));
+  } catch {}
+
+  return profile;
 }
 
 /**

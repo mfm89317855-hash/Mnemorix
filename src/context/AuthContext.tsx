@@ -2,11 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   AuthUserProfile,
   signInWithGoogle,
+  signInWithEmail,
+  signInWithDemoRole,
   signOutUser,
   subscribeToAuth,
   isFirebaseConfigured,
+  PRESET_SECOPS_USERS,
 } from '../lib/firebase';
-import { soundClick, soundChainVerified } from '../lib/sound';
+import { soundClick, soundChainVerified, soundThreatAlert } from '../lib/sound';
 
 interface AuthContextType {
   user: AuthUserProfile | null;
@@ -15,7 +18,10 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string, displayName?: string, role?: string) => Promise<void>;
+  loginWithRole: (roleUser: AuthUserProfile) => Promise<void>;
   logout: () => Promise<void>;
+  presetUsers: AuthUserProfile[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,12 +55,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const loginWithEmail = useCallback(
+    async (email: string, password: string, displayName?: string, role?: string) => {
+      soundClick();
+      setLoading(true);
+      try {
+        const profile = await signInWithEmail(email, password, displayName, role);
+        setUser(profile);
+        soundChainVerified();
+        setIsAuthModalOpen(false);
+      } catch (err) {
+        console.error('Email Sign-in failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const loginWithRole = useCallback(async (roleUser: AuthUserProfile) => {
+    soundClick();
+    setLoading(true);
+    try {
+      const profile = await signInWithDemoRole(roleUser);
+      setUser(profile);
+      soundChainVerified();
+      setIsAuthModalOpen(false);
+    } catch (err) {
+      console.error('Role Sign-in failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     soundClick();
     setLoading(true);
     try {
       await signOutUser();
       setUser(null);
+      soundThreatAlert(); // Sound feedback on sign out
+      setIsAuthModalOpen(false);
     } catch (err) {
       console.error('Sign-out failed:', err);
     } finally {
@@ -71,7 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthModalOpen,
         setIsAuthModalOpen,
         loginWithGoogle,
+        loginWithEmail,
+        loginWithRole,
         logout,
+        presetUsers: PRESET_SECOPS_USERS,
       }}
     >
       {children}
