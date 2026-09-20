@@ -32,6 +32,13 @@ import {
   sendCopilotMessage as apiSendCopilotMessage,
   fetchKPIs,
 } from '../lib/api';
+import {
+  syncMemoryToFirestore,
+  syncAuditToFirestore,
+  syncThreatToFirestore,
+  subscribeToFirestoreMemories,
+  subscribeToFirestoreAuditLogs,
+} from '../lib/firebase';
 import confetti from 'canvas-confetti';
 
 export type NavigationTab = 'dashboard' | 'hashchain' | 'firewall' | 'fleet' | 'policies' | 'audit';
@@ -208,12 +215,45 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadAll();
   }, [loadAll]);
 
+  // Real-time Firestore sync listeners
+  useEffect(() => {
+    const unsubMemories = subscribeToFirestoreMemories((firestoreMemories) => {
+      if (firestoreMemories && firestoreMemories.length > 0) {
+        setMemories((prev) => {
+          const map = new Map(prev.map((m) => [m.id, m]));
+          for (const fm of firestoreMemories) {
+            map.set(fm.id, { ...map.get(fm.id), ...fm });
+          }
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    const unsubAudit = subscribeToFirestoreAuditLogs((firestoreLogs) => {
+      if (firestoreLogs && firestoreLogs.length > 0) {
+        setAuditLogs((prev) => {
+          const map = new Map(prev.map((l) => [l.id, l]));
+          for (const fl of firestoreLogs) {
+            map.set(fl.id, { ...map.get(fl.id), ...fl });
+          }
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    return () => {
+      unsubMemories();
+      unsubAudit();
+    };
+  }, []);
+
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0];
 
   // Audit Logs
   const addAuditLog = useCallback(
     async (action: string, source: string, targetId: string, status: AuditLog['status'], details: string) => {
-      await apiAddAuditLog({ action, source, targetId, status, details });
+      const added = await apiAddAuditLog({ action, source, targetId, status, details });
+      await syncAuditToFirestore({ action, source, targetId, status, details });
       await loadAll();
     },
     [loadAll]
@@ -256,7 +296,11 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Threats
   const addThreatEvent = useCallback(
     async (eventData: Omit<ThreatEvent, 'id' | 'timestamp'>) => {
-      await addThreat(eventData);
+      const added = await addThreat(eventData);
+      await syncThreatToFirestore({
+        ...eventData,
+        status: 'detected',
+      });
       await loadAll();
     },
     [loadAll]
@@ -266,22 +310,30 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const quarantineMemory = useCallback(
     async (id: string) => {
       await apiQuarantineMemory(id);
+      const mem = memories.find((m) => m.id === id);
+      if (mem) {
+        await syncMemoryToFirestore({ ...mem, status: 'quarantined' });
+      }
       await loadAll();
     },
-    [loadAll]
+    [loadAll, memories]
   );
 
   const restoreMemory = useCallback(
     async (id: string) => {
       await apiRestoreMemory(id);
+      const mem = memories.find((m) => m.id === id);
+      if (mem) {
+        await syncMemoryToFirestore({ ...mem, status: 'verified' });
+      }
       await loadAll();
     },
-    [loadAll]
+    [loadAll, memories]
   );
 
   const addVerifiedMemory = useCallback(
     async (item: Omit<MemoryItem, 'id' | 'hash' | 'parentHash' | 'status' | 'timestamp'>) => {
-      await addMemory({
+      const added = await addMemory({
         agentId: item.agentId,
         agentName: item.agentName,
         partition: item.partition,
@@ -294,6 +346,9 @@ export const SentinelProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         vectorDriftDelta: item.vectorDriftDelta,
         metadata: item.metadata,
       });
+      if (added) {
+        await syncMemoryToFirestore(added as any);
+      }
       await loadAll();
     },
     [loadAll]

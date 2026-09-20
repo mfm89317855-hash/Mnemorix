@@ -3,11 +3,9 @@ import {
   AuthUserProfile,
   signInWithGoogle,
   signInWithEmail,
-  signInWithDemoRole,
   signOutUser,
   subscribeToAuth,
   isFirebaseConfigured,
-  PRESET_SECOPS_USERS,
 } from '../lib/firebase';
 import { soundClick, soundChainVerified, soundThreatAlert } from '../lib/sound';
 
@@ -17,11 +15,11 @@ interface AuthContextType {
   isFirebaseConfigured: boolean;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  loginWithGoogle: () => Promise<void>;
-  loginWithEmail: (email: string, password: string, displayName?: string, role?: string) => Promise<void>;
-  loginWithRole: (roleUser: AuthUserProfile) => Promise<void>;
+  authError: string | null;
+  clearAuthError: () => void;
+  loginWithGoogle: () => Promise<boolean>;
+  loginWithEmail: (email: string, password: string, displayName?: string, role?: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  presetUsers: AuthUserProfile[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,7 +28,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const configured = isFirebaseConfigured();
+
+  const clearAuthError = useCallback(() => setAuthError(null), []);
 
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
@@ -40,32 +41,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
+  const loginWithGoogle = useCallback(async (): Promise<boolean> => {
     soundClick();
     setLoading(true);
+    setAuthError(null);
     try {
       const profile = await signInWithGoogle();
       setUser(profile);
       soundChainVerified();
       setIsAuthModalOpen(false);
-    } catch (err) {
+      return true;
+    } catch (err: any) {
       console.error('Google Sign-in failed:', err);
+      // Clean, human-readable error messages for users
+      if (err.code === 'auth/popup-closed-by-user') {
+        setAuthError('Sign-in cancelled: The Google sign-in window was closed.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setAuthError('Unauthorized domain: Please add your app domain to Firebase Console > Authentication > Settings > Authorized Domains.');
+      } else {
+        setAuthError(err.message || 'Google sign-in encountered an issue.');
+      }
+      soundThreatAlert();
+      return false;
     } finally {
       setLoading(false);
     }
   }, []);
 
   const loginWithEmail = useCallback(
-    async (email: string, password: string, displayName?: string, role?: string) => {
+    async (email: string, password: string, displayName?: string, role?: string): Promise<boolean> => {
       soundClick();
       setLoading(true);
+      setAuthError(null);
       try {
         const profile = await signInWithEmail(email, password, displayName, role);
         setUser(profile);
         soundChainVerified();
         setIsAuthModalOpen(false);
-      } catch (err) {
+        return true;
+      } catch (err: any) {
         console.error('Email Sign-in failed:', err);
+        setAuthError(err.message || 'Authentication failed. Check your email and password.');
+        soundThreatAlert();
+        return false;
       } finally {
         setLoading(false);
       }
@@ -73,28 +91,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   );
 
-  const loginWithRole = useCallback(async (roleUser: AuthUserProfile) => {
-    soundClick();
-    setLoading(true);
-    try {
-      const profile = await signInWithDemoRole(roleUser);
-      setUser(profile);
-      soundChainVerified();
-      setIsAuthModalOpen(false);
-    } catch (err) {
-      console.error('Role Sign-in failed:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     soundClick();
     setLoading(true);
+    setAuthError(null);
     try {
       await signOutUser();
       setUser(null);
-      soundThreatAlert(); // Sound feedback on sign out
+      soundThreatAlert();
       setIsAuthModalOpen(false);
     } catch (err) {
       console.error('Sign-out failed:', err);
@@ -111,11 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isFirebaseConfigured: configured,
         isAuthModalOpen,
         setIsAuthModalOpen,
+        authError,
+        clearAuthError,
         loginWithGoogle,
         loginWithEmail,
-        loginWithRole,
         logout,
-        presetUsers: PRESET_SECOPS_USERS,
       }}
     >
       {children}

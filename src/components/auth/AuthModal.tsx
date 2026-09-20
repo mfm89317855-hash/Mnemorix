@@ -12,10 +12,13 @@ import {
   LogOut,
   Sparkles,
   Zap,
-  ShieldAlert,
+  AlertTriangle,
+  RefreshCw,
+  Server,
+  Cloud,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getFirebaseConfig, saveCustomFirebaseConfig, AuthUserProfile } from '../../lib/firebase';
+import { getFirebaseConfig, saveCustomFirebaseConfig } from '../../lib/firebase';
 import { soundClick } from '../../lib/sound';
 
 export const AuthModal: React.FC = () => {
@@ -24,26 +27,29 @@ export const AuthModal: React.FC = () => {
     setIsAuthModalOpen,
     loginWithGoogle,
     loginWithEmail,
-    loginWithRole,
     user,
     logout,
     loading,
     isFirebaseConfigured,
-    presetUsers,
+    authError,
+    clearAuthError,
   } = useAuth();
 
-  const [authTab, setAuthTab] = useState<'google' | 'email' | 'roles' | 'config'>('google');
+  const [authTab, setAuthTab] = useState<'google' | 'email' | 'config'>('google');
 
   // Email form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState('Enterprise SecOps Analyst');
+  const [role, setRole] = useState('Chief AI Safety Officer');
 
   // Custom Firebase config state
-  const [apiKey, setApiKey] = useState(getFirebaseConfig().apiKey || '');
-  const [projectId, setProjectId] = useState(getFirebaseConfig().projectId || '');
-  const [authDomain, setAuthDomain] = useState(getFirebaseConfig().authDomain || '');
+  const currentConfig = getFirebaseConfig();
+  const [apiKey, setApiKey] = useState(currentConfig.apiKey || '');
+  const [projectId, setProjectId] = useState(currentConfig.projectId || '');
+  const [authDomain, setAuthDomain] = useState(currentConfig.authDomain || '');
+  const [storageBucket, setStorageBucket] = useState(currentConfig.storageBucket || '');
+  const [appId, setAppId] = useState(currentConfig.appId || '');
 
   if (!isAuthModalOpen) return null;
 
@@ -59,17 +65,25 @@ export const AuthModal: React.FC = () => {
     saveCustomFirebaseConfig({
       apiKey: apiKey.trim(),
       projectId: projectId.trim(),
-      authDomain: authDomain.trim() || `${projectId.trim()}.firebaseapp.com`,
+      authDomain: authDomain.trim() || (projectId.trim() ? `${projectId.trim()}.firebaseapp.com` : ''),
+      storageBucket: storageBucket.trim() || (projectId.trim() ? `${projectId.trim()}.appspot.com` : ''),
+      appId: appId.trim(),
     });
   };
 
+  const handleSwitchAccount = async () => {
+    await logout();
+    await loginWithGoogle();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
       <div className="relative w-full max-w-lg white-red-card p-6 shadow-2xl rounded-2xl border-2 border-red-500/20 bg-white max-h-[92vh] flex flex-col overflow-hidden">
         {/* Close button */}
         <button
           onClick={() => {
             soundClick();
+            clearAuthError();
             setIsAuthModalOpen(false);
           }}
           className="absolute right-4 top-4 rounded-xl p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
@@ -86,17 +100,42 @@ export const AuthModal: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <h3 className="font-display text-base font-bold text-slate-900">
-                Enterprise Access Portal
+                Enterprise Authentication
               </h3>
               <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-mono font-bold text-red-700 border border-red-200">
-                ZERO-TRUST
+                FIREBASE LIVE
               </span>
             </div>
             <p className="text-xs font-mono text-slate-500">
-              Identity & Access Management for MNEMORIX Sentinel
+              Multi-Account Google OAuth 2.0 & Cloud Firestore Real-Time Sync
             </p>
           </div>
         </div>
+
+        {/* Auth Error Banner */}
+        {authError && (
+          <div className="mb-3 rounded-xl border border-red-300 bg-red-50 p-3 text-xs font-mono text-red-800 flex items-start space-x-2 shrink-0 animate-in fade-in">
+            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <span className="font-bold block">Authentication Notice:</span>
+              <span className="text-[11px] text-red-700 font-sans leading-tight block mt-0.5">
+                {authError}
+              </span>
+              {!isFirebaseConfigured && (
+                <button
+                  onClick={() => {
+                    soundClick();
+                    clearAuthError();
+                    setAuthTab('config');
+                  }}
+                  className="mt-1.5 inline-block text-[11px] font-bold text-red-700 underline hover:text-red-900"
+                >
+                  Configure Firebase Project Keys &rarr;
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-4 font-mono text-xs">
@@ -125,29 +164,32 @@ export const AuthModal: React.FC = () => {
                   <p className="text-xs font-mono text-slate-600 truncate">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-800 border border-emerald-300">
-                      {user.role || 'Enterprise SecOps Analyst'}
+                      {user.provider === 'google.com' ? 'Google OAuth Account' : 'Work Email Account'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Clearance & Session Info */}
+              {/* Real-time Storage & Clearance Info */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2 text-slate-600 text-xs">
+                <div className="flex justify-between items-center">
+                  <span>Cloud Database:</span>
+                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                    <Database className="h-3 w-3 text-emerald-600" />
+                    <span>Cloud Firestore Live</span>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Firestore Document:</span>
+                  <span className="font-mono text-[10px] text-slate-800 truncate max-w-[200px]" title={`users/${user.uid}`}>
+                    users/{user.uid}
+                  </span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span>Security Clearance:</span>
                   <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 border border-red-200">
                     LEVEL-4 SEC-OPS
                   </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Organization:</span>
-                  <strong className="text-slate-800">{user.organization || 'MNEMORIX Sovereign Defense'}</strong>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Authentication Engine:</span>
-                  <strong className="text-slate-800">
-                    {user.isDemo ? 'Local Sovereign Pass' : 'Google OAuth 2.0 / Firebase'}
-                  </strong>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Session Signature:</span>
@@ -158,15 +200,28 @@ export const AuthModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sign Out Action Button */}
-              <button
-                onClick={logout}
-                disabled={loading}
-                className="w-full flex items-center justify-center space-x-2 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 font-mono text-xs font-bold py-3 transition-all shadow-xs active:scale-98"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out from Active Session</span>
-              </button>
+              {/* Account Action Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleSwitchAccount}
+                  disabled={loading}
+                  className="flex items-center justify-center space-x-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-bold py-2.5 transition-all shadow-xs active:scale-98 disabled:opacity-50"
+                  title="Switch to a different Google account"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Switch Account</span>
+                </button>
+
+                <button
+                  onClick={logout}
+                  disabled={loading}
+                  className="flex items-center justify-center space-x-1.5 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 font-mono text-xs font-bold py-2.5 transition-all shadow-xs active:scale-98 disabled:opacity-50"
+                  title="Sign out from session"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           ) : (
             /* Sign-in Flow */
@@ -174,15 +229,15 @@ export const AuthModal: React.FC = () => {
               {/* Tab Selector */}
               <div className="flex space-x-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200">
                 {[
-                  { id: 'google', label: 'Google OAuth' },
-                  { id: 'email', label: 'Email & Pass' },
-                  { id: 'roles', label: '⚡ Demo Roles' },
-                  { id: 'config', label: 'Firebase Keys' },
+                  { id: 'google', label: 'Google OAuth (Multi-Account)' },
+                  { id: 'email', label: 'Work Email' },
+                  { id: 'config', label: 'Firebase Config' },
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => {
                       soundClick();
+                      clearAuthError();
                       setAuthTab(t.id as any);
                     }}
                     className={`flex-1 rounded-lg py-1.5 text-[11px] font-mono font-bold transition-all ${
@@ -200,8 +255,8 @@ export const AuthModal: React.FC = () => {
               {authTab === 'google' && (
                 <div className="space-y-3 pt-1">
                   <p className="text-xs text-slate-600 font-sans leading-relaxed">
-                    Sign in with your enterprise Google account to authenticate autonomous agent fleets,
-                    enforce zero-trust memory policies, and sync audit records to Google Cloud Firestore.
+                    Sign in with any of your Google accounts. The account selector allows you to select,
+                    switch, or add multiple personal or enterprise Google profiles.
                   </p>
 
                   <button
@@ -227,23 +282,23 @@ export const AuthModal: React.FC = () => {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>{loading ? 'Authenticating with Google...' : 'Continue with Google Account'}</span>
+                    <span>{loading ? 'Opening Google Account Chooser...' : 'Select & Sign In with Google Account'}</span>
                   </button>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] font-mono space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500 flex items-center space-x-1">
                         <Database className="h-3.5 w-3.5 text-red-600" />
-                        <span>Cloud Database:</span>
+                        <span>Real-Time Database:</span>
                       </span>
-                      <span className={`font-bold ${isFirebaseConfigured ? 'text-emerald-700' : 'text-slate-700'}`}>
-                        {isFirebaseConfigured ? 'Firebase Cloud Connected' : 'Demo Sandbox Mode (Active)'}
+                      <span className={`font-bold ${isFirebaseConfigured ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {isFirebaseConfigured ? `Cloud Firestore (${projectId || 'Active'})` : 'Firebase Keys Needed'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500 font-sans">
                       {isFirebaseConfigured
-                        ? 'All user sessions and telemetry sync to Cloud Firestore in real-time.'
-                        : 'If Google popup is restricted in your environment, click Continue with Google to load the enterprise sandbox profile.'}
+                        ? 'All user profiles, memories, and audit logs are saved and synced to Cloud Firestore in real time.'
+                        : 'To activate live Cloud Firestore sync and Google OAuth, enter your project keys in the Firebase Config tab.'}
                     </p>
                   </div>
                 </div>
@@ -252,6 +307,9 @@ export const AuthModal: React.FC = () => {
               {/* Tab 2: Email & Password */}
               {authTab === 'email' && (
                 <form onSubmit={handleEmailSubmit} className="space-y-3 pt-1">
+                  <p className="text-xs text-slate-600 font-sans">
+                    Authenticate using your work email address. New accounts are automatically provisioned in Firebase Auth and Firestore.
+                  </p>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">Work Email:</label>
                     <div className="relative">
@@ -273,6 +331,7 @@ export const AuthModal: React.FC = () => {
                       <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
                       <input
                         type="password"
+                        required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
@@ -312,65 +371,23 @@ export const AuthModal: React.FC = () => {
                     disabled={loading}
                     className="w-full flex items-center justify-center space-x-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 text-xs transition-all shadow-md shadow-red-500/20 active:scale-98 disabled:opacity-50"
                   >
-                    <span>{loading ? 'Authenticating...' : 'Sign In with Email'}</span>
+                    <span>{loading ? 'Authenticating with Firebase...' : 'Sign In / Register with Email'}</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </form>
               )}
 
-              {/* Tab 3: Pre-configured SecOps Demo Roles */}
-              {authTab === 'roles' && (
-                <div className="space-y-2.5 pt-1">
-                  <p className="text-[11px] text-slate-600 font-sans">
-                    Select an enterprise clearance persona to immediately test firewall rules, forensic audit chains, and threat containment:
-                  </p>
-                  <div className="space-y-2">
-                    {presetUsers.map((preset) => (
-                      <div
-                        key={preset.uid}
-                        onClick={() => loginWithRole(preset)}
-                        className="group flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white hover:border-red-400 hover:bg-red-50/30 cursor-pointer transition-all shadow-xs"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {preset.photoURL ? (
-                            <img
-                              src={preset.photoURL}
-                              alt={preset.displayName || 'User'}
-                              className="h-10 w-10 rounded-full border border-slate-300 object-cover"
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold">
-                              {(preset.displayName || 'U')[0]}
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-bold text-slate-900 group-hover:text-red-700 transition-colors">
-                              {preset.displayName}
-                            </div>
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              {preset.role}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="rounded-lg bg-slate-100 group-hover:bg-red-600 group-hover:text-white px-2.5 py-1 text-[10px] font-bold text-slate-700 transition-colors">
-                          Sign In
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 4: Firebase Custom Config */}
+              {/* Tab 3: Firebase Config */}
               {authTab === 'config' && (
                 <form onSubmit={handleSaveConfig} className="space-y-3 pt-1">
                   <p className="text-[11px] text-slate-600 font-sans">
-                    Provide your Firebase project credentials to sync live with your Google Cloud Firestore database:
+                    Connect your Firebase project to enable real-time Google OAuth and Cloud Firestore data synchronization:
                   </p>
                   <div>
-                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Firebase API Key:</label>
+                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Firebase API Key (apiKey):</label>
                     <input
                       type="text"
+                      required
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder="AIzaSy..."
@@ -378,9 +395,10 @@ export const AuthModal: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Project ID:</label>
+                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Project ID (projectId):</label>
                     <input
                       type="text"
+                      required
                       value={projectId}
                       onChange={(e) => setProjectId(e.target.value)}
                       placeholder="mnemorix-sentinel-prod"
@@ -388,20 +406,42 @@ export const AuthModal: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Auth Domain (optional):</label>
+                    <label className="block text-[10px] text-slate-600 font-bold mb-1">Auth Domain (authDomain):</label>
                     <input
                       type="text"
                       value={authDomain}
                       onChange={(e) => setAuthDomain(e.target.value)}
-                      placeholder="mnemorix.firebaseapp.com"
+                      placeholder="mnemorix-sentinel-prod.firebaseapp.com"
                       className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-red-500 focus:outline-none font-mono"
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-600 font-bold mb-1">Storage Bucket (optional):</label>
+                      <input
+                        type="text"
+                        value={storageBucket}
+                        onChange={(e) => setStorageBucket(e.target.value)}
+                        placeholder="mnemorix.appspot.com"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800 focus:border-red-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-600 font-bold mb-1">App ID (optional):</label>
+                      <input
+                        type="text"
+                        value={appId}
+                        onChange={(e) => setAppId(e.target.value)}
+                        placeholder="1:123456789:web:abcdef"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800 focus:border-red-500 focus:outline-none font-mono"
+                      />
+                    </div>
                   </div>
                   <button
                     type="submit"
                     className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold py-2 text-xs transition-all shadow-xs"
                   >
-                    Save & Initialize Firebase
+                    Save & Initialize Firebase Project
                   </button>
                 </form>
               )}

@@ -1,6 +1,7 @@
 /**
- * MNEMORIX Sentinel — Firebase Client SDK & Google Authentication
- * Provides Firebase App, Google OAuth, and Cloud Firestore sync with seamless demo fallback.
+ * MNEMORIX Sentinel — Live Firebase SDK & Google Authentication
+ * Provides real-time Google OAuth (with multi-account selection),
+ * Email/Password authentication, and real-time Cloud Firestore synchronization.
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
@@ -23,6 +24,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  onSnapshot,
   query,
   orderBy,
   limit,
@@ -37,13 +39,14 @@ export interface AuthUserProfile {
   organization?: string;
   role?: string;
   lastLogin?: string;
-  isDemo?: boolean;
+  provider?: string;
 }
 
 const STORAGE_CUSTOM_CONFIG = 'mnemorix_firebase_config';
-const STORAGE_DEMO_USER = 'mnemorix_demo_user';
 
-// Retrieve configuration from env or local storage
+/**
+ * Retrieve configuration from env or local storage
+ */
 export function getFirebaseConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_CUSTOM_CONFIG);
@@ -66,7 +69,7 @@ export function getFirebaseConfig() {
 
 export function isFirebaseConfigured(): boolean {
   const config = getFirebaseConfig();
-  return Boolean(config.apiKey && config.apiKey !== 'YOUR_API_KEY' && config.projectId);
+  return Boolean(config.apiKey && config.apiKey.length > 5 && config.projectId);
 }
 
 export function saveCustomFirebaseConfig(config: Record<string, string>) {
@@ -78,7 +81,8 @@ export function saveCustomFirebaseConfig(config: Record<string, string>) {
   }
 }
 
-// Initialize Firebase instances
+// ─── Firebase App & Client Instances ──────────────────────────────────────────
+
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _db: Firestore | null = null;
@@ -90,7 +94,7 @@ export function getFirebaseApp(): FirebaseApp | null {
     try {
       _app = getApps().length ? getApp() : initializeApp(config);
     } catch (err) {
-      console.warn('Firebase initialization error, using demo mode:', err);
+      console.error('Firebase initialization error:', err);
       return null;
     }
   }
@@ -103,7 +107,8 @@ export function getFirebaseAuth(): Auth | null {
   if (!_auth) {
     try {
       _auth = getAuth(app);
-    } catch {
+    } catch (err) {
+      console.error('Firebase Auth initialization error:', err);
       return null;
     }
   }
@@ -116,106 +121,59 @@ export function getFirebaseFirestore(): Firestore | null {
   if (!_db) {
     try {
       _db = getFirestore(app);
-    } catch {
+    } catch (err) {
+      console.error('Firestore initialization error:', err);
       return null;
     }
   }
   return _db;
 }
 
+// ─── Authentication Handlers ──────────────────────────────────────────────────
+
 /**
- * Sign In with Google Provider via Popup
- * Falls back gracefully to Demo Google Profile if Firebase credentials are not yet injected.
+ * Sign In with Google OAuth (Multi-Account Support)
+ * Always forces the Google account selection prompt (`prompt: 'select_account'`)
+ * so users can choose between multiple Google accounts or add a new one.
  */
 export async function signInWithGoogle(): Promise<AuthUserProfile> {
   const auth = getFirebaseAuth();
-
-  if (auth && isFirebaseConfigured()) {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('profile');
-      provider.addScope('email');
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const profile: AuthUserProfile = {
-        uid: user.uid,
-        displayName: user.displayName || 'Enterprise SecOps Agent',
-        email: user.email,
-        photoURL: user.photoURL,
-        organization: 'MNEMORIX Sovereign Defense',
-        role: 'Chief AI Safety Officer',
-        lastLogin: new Date().toISOString(),
-        isDemo: false,
-      };
-
-      // Sync user profile to Firestore
-      await syncUserToFirestore(profile);
-      return profile;
-    } catch (err: any) {
-      console.warn('Firebase Google Auth popup failed or was cancelled:', err);
-      // If error is due to missing configuration or origin restrictions, provide seamless demo fallback
-      return getSimulatedDemoUser();
-    }
+  if (!auth || !isFirebaseConfigured()) {
+    throw new Error(
+      'Firebase is not configured. Please enter your Firebase Project API keys in the settings tab.'
+    );
   }
 
-  // Demo Fallback Mode
-  return getSimulatedDemoUser();
-}
+  const provider = new GoogleAuthProvider();
+  provider.addScope('profile');
+  provider.addScope('email');
 
-/**
- * Enterprise SecOps Pre-configured Roles for Instant Demo Access
- */
-export const PRESET_SECOPS_USERS: AuthUserProfile[] = [
-  {
-    uid: 'secops-sarah-chen',
-    displayName: 'Dr. Sarah Chen',
-    email: 'sarah.chen@sentinel.defense.ai',
-    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    organization: 'Sentinel Cyber Command',
-    role: 'Lead AI Red Teamer & SecOps',
-    lastLogin: new Date().toISOString(),
-    isDemo: true,
-  },
-  {
-    uid: 'secops-alex-mercer',
-    displayName: 'Alex Mercer',
-    email: 'alex.mercer@mnemorix.internal',
-    photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    organization: 'MNEMORIX Sovereign Defense',
-    role: 'Chief AI Safety Officer (Level 4)',
-    lastLogin: new Date().toISOString(),
-    isDemo: true,
-  },
-  {
-    uid: 'secops-marcus-vance',
-    displayName: 'Marcus Vance',
-    email: 'marcus.vance@audit.nist-soc2.org',
-    photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    organization: 'NIST AI RMF Audit Fleet',
-    role: 'Lead Compliance Auditor',
-    lastLogin: new Date().toISOString(),
-    isDemo: true,
-  },
-];
+  // KEY CONFIGURATION: Prompt user to choose their Google account every time
+  // Allows seamless switching between multiple personal/work Google accounts.
+  provider.setCustomParameters({ prompt: 'select_account' });
 
-/**
- * Sign In with a 1-click Preset SecOps Role
- */
-export async function signInWithDemoRole(roleUser: AuthUserProfile): Promise<AuthUserProfile> {
+  const result = await signInWithPopup(auth, provider);
+  const user = result.user;
+
   const profile: AuthUserProfile = {
-    ...roleUser,
+    uid: user.uid,
+    displayName: user.displayName || user.email?.split('@')[0] || 'Enterprise SecOps Agent',
+    email: user.email,
+    photoURL: user.photoURL,
+    organization: 'MNEMORIX Sovereign Defense',
+    role: 'Chief AI Safety Officer',
     lastLogin: new Date().toISOString(),
-    isDemo: true,
+    provider: 'google.com',
   };
-  try {
-    localStorage.setItem(STORAGE_DEMO_USER, JSON.stringify(profile));
-  } catch {}
+
+  // Persist real user account into Firestore in real time
+  await syncUserToFirestore(profile);
   return profile;
 }
 
 /**
- * Sign In with Email & Password (with Firebase or local fallback)
+ * Sign In or Register with Work Email & Password
+ * Real authentication via Firebase Email/Password provider.
  */
 export async function signInWithEmail(
   email: string,
@@ -224,93 +182,65 @@ export async function signInWithEmail(
   role?: string
 ): Promise<AuthUserProfile> {
   const auth = getFirebaseAuth();
+  if (!auth || !isFirebaseConfigured()) {
+    throw new Error(
+      'Firebase is not configured. Please enter your Firebase Project API keys in the settings tab.'
+    );
+  }
 
-  if (auth && isFirebaseConfigured()) {
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const user = cred.user;
-      const profile: AuthUserProfile = {
-        uid: user.uid,
-        displayName: user.displayName || displayName || email.split('@')[0],
-        email: user.email,
-        photoURL: user.photoURL,
-        organization: 'MNEMORIX Sovereign Defense',
-        role: role || 'Enterprise SecOps Analyst',
-        lastLogin: new Date().toISOString(),
-        isDemo: false,
-      };
-      await syncUserToFirestore(profile);
-      return profile;
-    } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        try {
-          const cred = await createUserWithEmailAndPassword(auth, email, password);
-          const user = cred.user;
-          if (displayName) {
-            await updateProfile(user, { displayName });
-          }
-          const profile: AuthUserProfile = {
-            uid: user.uid,
-            displayName: displayName || email.split('@')[0],
-            email: user.email,
-            photoURL: user.photoURL,
-            organization: 'MNEMORIX Sovereign Defense',
-            role: role || 'Enterprise SecOps Analyst',
-            lastLogin: new Date().toISOString(),
-            isDemo: false,
-          };
-          await syncUserToFirestore(profile);
-          return profile;
-        } catch (innerErr) {
-          console.warn('Firebase email auth creation fallback:', innerErr);
+  let user: FirebaseUser;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    user = cred.user;
+  } catch (err: any) {
+    // If account does not exist, automatically register new user
+    if (
+      err.code === 'auth/user-not-found' ||
+      err.code === 'auth/invalid-credential' ||
+      err.code === 'auth/invalid-login-credentials'
+    ) {
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        user = cred.user;
+        if (displayName) {
+          await updateProfile(user, { displayName });
         }
+      } catch (innerErr: any) {
+        throw new Error(innerErr.message || 'Failed to create Firebase user account');
       }
+    } else {
+      throw new Error(err.message || 'Failed to sign in with email/password');
     }
   }
 
-  // Local Secure Session Fallback
-  const cleanName =
-    displayName ||
-    email
-      .split('@')[0]
-      .replace(/[._-]/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
   const profile: AuthUserProfile = {
-    uid: `usr_${Math.random().toString(36).substring(2, 10)}`,
-    displayName: cleanName,
-    email,
-    photoURL: null,
+    uid: user.uid,
+    displayName: displayName || user.displayName || email.split('@')[0],
+    email: user.email,
+    photoURL: user.photoURL,
     organization: 'MNEMORIX Sovereign Defense',
     role: role || 'Enterprise SecOps Analyst',
     lastLogin: new Date().toISOString(),
-    isDemo: true,
+    provider: 'password',
   };
 
-  try {
-    localStorage.setItem(STORAGE_DEMO_USER, JSON.stringify(profile));
-  } catch {}
-
+  await syncUserToFirestore(profile);
   return profile;
 }
 
 /**
- * Signs out active user
+ * Signs out the active user from Firebase and clears authentication state
  */
 export async function signOutUser(): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth) {
-    try {
-      await fbSignOut(auth);
-    } catch {}
+    await fbSignOut(auth);
   }
-  try {
-    localStorage.removeItem(STORAGE_DEMO_USER);
-  } catch {}
 }
 
 /**
- * Watch Auth State Changes
+ * Watch Real-Time Auth State Changes
+ * Strictly reports real authenticated user or null. No mock/demo fallback.
  */
 export function subscribeToAuth(callback: (user: AuthUserProfile | null) => void): () => void {
   const auth = getFirebaseAuth();
@@ -318,32 +248,33 @@ export function subscribeToAuth(callback: (user: AuthUserProfile | null) => void
   if (auth && isFirebaseConfigured()) {
     return onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
       if (fbUser) {
-        callback({
+        const profile: AuthUserProfile = {
           uid: fbUser.uid,
-          displayName: fbUser.displayName,
+          displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Enterprise SecOps User',
           email: fbUser.email,
           photoURL: fbUser.photoURL,
           organization: 'MNEMORIX Sovereign Defense',
           role: 'Chief AI Safety Officer',
           lastLogin: new Date().toISOString(),
-          isDemo: false,
-        });
+          provider: fbUser.providerData[0]?.providerId || 'firebase',
+        };
+        callback(profile);
       } else {
-        // Check for persisted demo user
-        const demo = getPersistedDemoUser();
-        callback(demo);
+        callback(null);
       }
     });
   }
 
-  // If Firebase not configured, check local demo session
-  const demo = getPersistedDemoUser();
-  callback(demo);
+  // If Firebase not configured or auth not initialized, user is logged out
+  callback(null);
   return () => {};
 }
 
-// ─── Firestore Helpers ─────────────────────────────────────────────────────────
+// ─── Real-Time Firestore Synchronization ──────────────────────────────────────
 
+/**
+ * Syncs user profile to Cloud Firestore `users/{uid}` in real time
+ */
 export async function syncUserToFirestore(user: AuthUserProfile): Promise<void> {
   const db = getFirebaseFirestore();
   if (!db) return;
@@ -351,12 +282,15 @@ export async function syncUserToFirestore(user: AuthUserProfile): Promise<void> 
     await setDoc(
       doc(db, 'users', user.uid),
       {
+        uid: user.uid,
         displayName: user.displayName,
         email: user.email,
         photoURL: user.photoURL,
-        organization: user.organization,
-        role: user.role,
-        lastLogin: user.lastLogin,
+        organization: user.organization || 'MNEMORIX Sovereign Defense',
+        role: user.role || 'Chief AI Safety Officer',
+        lastLogin: user.lastLogin || new Date().toISOString(),
+        provider: user.provider || 'firebase',
+        updatedAt: new Date().toISOString(),
       },
       { merge: true }
     );
@@ -365,49 +299,150 @@ export async function syncUserToFirestore(user: AuthUserProfile): Promise<void> 
   }
 }
 
+/**
+ * Syncs memory item into Cloud Firestore `memories/{id}` in real time
+ */
+export async function syncMemoryToFirestore(memory: {
+  id: string;
+  agentId: string;
+  agentName: string;
+  partition: string;
+  content: string;
+  category?: string;
+  status: string;
+  hash: string;
+  parentHash?: string;
+  timestamp: string;
+  piiRedacted?: boolean;
+  confidenceScore?: number;
+  tags?: string[];
+  author?: string;
+  vectorDriftDelta?: number;
+}): Promise<void> {
+  const db = getFirebaseFirestore();
+  if (!db) return;
+  try {
+    await setDoc(
+      doc(db, 'memories', memory.id),
+      {
+        ...memory,
+        syncedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Firestore memory sync warning:', err);
+  }
+}
+
+/**
+ * Syncs audit log event to Cloud Firestore `audit_logs/{id}` in real time
+ */
 export async function syncAuditToFirestore(auditData: {
+  id?: string;
   action: string;
   source: string;
   targetId: string;
   status: string;
   details: string;
-  hash: string;
+  hash?: string;
+  timestamp?: string;
 }): Promise<void> {
   const db = getFirebaseFirestore();
   if (!db) return;
   try {
-    await addDoc(collection(db, 'audit_logs'), {
-      ...auditData,
-      createdAt: new Date().toISOString(),
-    });
+    const docId = auditData.id || `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    await setDoc(
+      doc(db, 'audit_logs', docId),
+      {
+        ...auditData,
+        id: docId,
+        createdAt: auditData.timestamp || new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (err) {
-    console.warn('Firestore audit sync warning:', err);
+    console.warn('Firestore audit log sync warning:', err);
   }
 }
 
-// ─── Demo User Helpers ─────────────────────────────────────────────────────────
-
-function getSimulatedDemoUser(): AuthUserProfile {
-  const demoUser: AuthUserProfile = {
-    uid: 'demo-google-uid-8842',
-    displayName: 'Dr. Sarah Chen',
-    email: 'sarah.chen@enterprise-sentinel.ai',
-    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    organization: 'Sentinel Cyber Command',
-    role: 'Lead AI Red Teamer & SecOps',
-    lastLogin: new Date().toISOString(),
-    isDemo: true,
-  };
+/**
+ * Syncs threat detection event to Cloud Firestore `threats/{id}` in real time
+ */
+export async function syncThreatToFirestore(threatData: {
+  id?: string;
+  agentId?: string;
+  agentName?: string;
+  type?: string;
+  threatType?: string;
+  severity?: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  [key: string]: any;
+}): Promise<void> {
+  const db = getFirebaseFirestore();
+  if (!db) return;
   try {
-    localStorage.setItem(STORAGE_DEMO_USER, JSON.stringify(demoUser));
-  } catch {}
-  return demoUser;
+    const docId = threatData.id || `threat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    await setDoc(
+      doc(db, 'threats', docId),
+      {
+        ...threatData,
+        id: docId,
+        detectedAt: threatData.detectedAt || new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Firestore threat sync warning:', err);
+  }
 }
 
-function getPersistedDemoUser(): AuthUserProfile | null {
+/**
+ * Real-time listener for Firestore `memories` collection
+ */
+export function subscribeToFirestoreMemories(
+  callback: (memories: any[]) => void
+): () => void {
+  const db = getFirebaseFirestore();
+  if (!db) return () => {};
+
   try {
-    const saved = localStorage.getItem(STORAGE_DEMO_USER);
-    if (saved) return JSON.parse(saved);
-  } catch {}
-  return null;
+    const q = query(collection(db, 'memories'), orderBy('timestamp', 'desc'), limit(100));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (items.length > 0) callback(items);
+      },
+      (err) => console.warn('Firestore memories subscription warning:', err)
+    );
+  } catch {
+    return () => {};
+  }
+}
+
+/**
+ * Real-time listener for Firestore `audit_logs` collection
+ */
+export function subscribeToFirestoreAuditLogs(
+  callback: (logs: any[]) => void
+): () => void {
+  const db = getFirebaseFirestore();
+  if (!db) return () => {};
+
+  try {
+    const q = query(collection(db, 'audit_logs'), orderBy('createdAt', 'desc'), limit(100));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (items.length > 0) callback(items);
+      },
+      (err) => console.warn('Firestore audit logs subscription warning:', err)
+    );
+  } catch {
+    return () => {};
+  }
 }
