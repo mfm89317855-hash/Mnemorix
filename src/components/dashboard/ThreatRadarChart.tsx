@@ -37,31 +37,31 @@ export const ThreatRadarChart: React.FC = () => {
   ];
 
   return (
-    <div className="white-red-card p-5 flex flex-col h-full shadow-2xs">
+    <div className="glass-card p-5 flex flex-col h-full shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200 text-red-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
             <Radio className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-display text-sm font-bold text-slate-900 uppercase tracking-wider">
+            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
               {chartView === 'radar' ? 'Security Posture Radar' : 'Vector Drift Telemetry'}
             </h3>
-            <p className="text-[11px] font-mono text-slate-500">
+            <p className="text-[11px] font-mono text-slate-400">
               {chartView === 'radar' ? 'Multi-dimensional defense coverage' : 'Historical Cosine Divergence Trend'}
             </p>
           </div>
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+        <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
           <button
             onClick={() => setChartView('radar')}
             className={`rounded px-2.5 py-1 text-[11px] font-mono font-bold transition-all ${
               chartView === 'radar'
-                ? 'bg-red-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Radar
@@ -70,8 +70,8 @@ export const ThreatRadarChart: React.FC = () => {
             onClick={() => setChartView('drift')}
             className={`rounded px-2.5 py-1 text-[11px] font-mono font-bold transition-all ${
               chartView === 'drift'
-                ? 'bg-red-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Vector Drift
@@ -84,19 +84,19 @@ export const ThreatRadarChart: React.FC = () => {
         {chartView === 'radar' ? (
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-              <PolarGrid stroke="#E2E8F0" />
+              <PolarGrid stroke="rgba(148, 163, 184, 0.15)" />
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'Plus Jakarta Sans', fontWeight: 600 }}
+                tick={{ fill: '#94A3B8', fontSize: 10, fontFamily: 'Plus Jakarta Sans', fontWeight: 600 }}
               />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#CBD5E1" />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(148, 163, 184, 0.2)" />
               <Radar
                 name="Security Score"
                 dataKey="A"
-                stroke="#DC2626"
+                stroke="#EF4444"
                 strokeWidth={2}
                 fill="#EF4444"
-                fillOpacity={0.2}
+                fillOpacity={0.25}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -105,28 +105,28 @@ export const ThreatRadarChart: React.FC = () => {
             <AreaChart data={driftTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorAlpha" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#DC2626" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#DC2626" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorAether" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" stroke="#94A3B8" tick={{ fontSize: 10, fill: '#64748B' }} />
-              <YAxis stroke="#94A3B8" tick={{ fontSize: 10, fill: '#64748B' }} />
+              <XAxis dataKey="time" stroke="#475569" tick={{ fontSize: 10, fill: '#94A3B8' }} />
+              <YAxis stroke="#475569" tick={{ fontSize: 10, fill: '#94A3B8' }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#FFFFFF',
-                  borderColor: '#E2E8F0',
-                  borderRadius: '0.5rem',
+                  backgroundColor: '#0F172A',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  borderRadius: '0.75rem',
                   fontSize: '11px',
                   fontFamily: 'JetBrains Mono',
-                  color: '#0F172A',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  color: '#F8FAFC',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                 }}
               />
-              <Area type="monotone" dataKey="alpha" stroke="#DC2626" strokeWidth={2} fillOpacity={1} fill="url(#colorAlpha)" name="SENTINEL-ALPHA" />
+              <Area type="monotone" dataKey="alpha" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorAlpha)" name="SENTINEL-ALPHA" />
               <Area type="monotone" dataKey="aether" stroke="#F59E0B" strokeWidth={2} fillOpacity={1} fill="url(#colorAether)" name="AETHER-DEV" />
             </AreaChart>
           </ResponsiveContainer>
@@ -134,12 +134,12 @@ export const ThreatRadarChart: React.FC = () => {
       </div>
 
       {/* Fleet Legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 text-[11px] font-mono">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[11px] font-mono">
         {agents.map((agent) => (
-          <div key={agent.id} className="flex items-center space-x-1.5 text-slate-600">
+          <div key={agent.id} className="flex items-center space-x-1.5 text-slate-400">
             <span>{agent.avatar}</span>
             <span className="truncate">{agent.name}:</span>
-            <strong className="text-red-600 font-bold">{agent.integrityScore}%</strong>
+            <strong className="text-red-400 font-bold">{agent.integrityScore}%</strong>
           </div>
         ))}
       </div>

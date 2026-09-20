@@ -18,7 +18,7 @@ import {
   Cloud,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getFirebaseConfig, saveCustomFirebaseConfig } from '../../lib/firebase';
+import { getFirebaseConfig, saveCustomFirebaseConfig, clearCustomFirebaseConfig } from '../../lib/firebase';
 import { soundClick } from '../../lib/sound';
 
 export const AuthModal: React.FC = () => {
@@ -121,18 +121,31 @@ export const AuthModal: React.FC = () => {
               <span className="text-[11px] text-red-700 font-sans leading-tight block mt-0.5">
                 {authError}
               </span>
-              {!isFirebaseConfigured && (
-                <button
-                  onClick={() => {
-                    soundClick();
-                    clearAuthError();
-                    setAuthTab('config');
-                  }}
-                  className="mt-1.5 inline-block text-[11px] font-bold text-red-700 underline hover:text-red-900"
-                >
-                  Configure Firebase Project Keys &rarr;
-                </button>
-              )}
+              <div className="flex items-center space-x-3 mt-1.5">
+                {!isFirebaseConfigured && (
+                  <button
+                    onClick={() => {
+                      soundClick();
+                      clearAuthError();
+                      setAuthTab('config');
+                    }}
+                    className="inline-block text-[11px] font-bold text-red-700 underline hover:text-red-900"
+                  >
+                    Configure Firebase Project Keys &rarr;
+                  </button>
+                )}
+                {authError.toLowerCase().includes('api-key') && (
+                  <button
+                    onClick={() => {
+                      soundClick();
+                      clearCustomFirebaseConfig();
+                    }}
+                    className="inline-block text-[11px] font-bold text-blue-700 underline hover:text-blue-900"
+                  >
+                    Reset &amp; Reload Firebase Config
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

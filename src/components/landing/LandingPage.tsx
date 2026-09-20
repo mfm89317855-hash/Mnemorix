@@ -15,10 +15,12 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchConsole }) => {
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col selection:bg-red-500/20 selection:text-red-700">
+    <div className="min-h-screen bg-[#06080F] text-slate-200 flex flex-col selection:bg-red-500/30 selection:text-red-300">
       
-      {/* Ambient background pattern */}
-      <div className="fixed inset-0 bg-white-grid bg-white-radial pointer-events-none z-0" />
+      {/* Multi-layered ambient backgrounds */}
+      <div className="fixed inset-0 bg-matrix-grid pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-radial-glow pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-dot-matrix pointer-events-none z-0 opacity-40" />
 
       {/* Main Content Sections */}
       <div className="relative z-10 flex flex-col flex-1">

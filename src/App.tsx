@@ -49,13 +49,14 @@ const ConsoleContainer: React.FC<{ onBackToLanding: () => void }> = ({ onBackToL
   }, [isCopilotOpen, setIsCopilotOpen]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col selection:bg-red-500/20 selection:text-red-700 relative">
+    <div className="min-h-screen bg-[#06080F] text-slate-200 flex flex-col selection:bg-red-500/30 selection:text-red-300 relative font-sans">
       
-      {/* Laser Red Accent Stripe at the very top */}
-      <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-rose-500 to-red-600 z-50 opacity-90" />
+      {/* Laser Red Accent Stripe at the very top with neon glow */}
+      <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-rose-500 to-red-600 z-50 shadow-[0_0_12px_rgba(239,68,68,0.8)]" />
 
-      {/* Ambient Grid Background */}
-      <div className="fixed inset-0 bg-white-grid bg-white-radial pointer-events-none z-0" />
+      {/* Ambient Matrix Grid & Radial Glow Background */}
+      <div className="fixed inset-0 bg-matrix-grid pointer-events-none z-0 opacity-70" />
+      <div className="fixed inset-0 bg-radial-glow pointer-events-none z-0" />
 
       {/* Top Console Navbar */}
       <Navbar onBackToLanding={onBackToLanding} />
@@ -73,20 +74,20 @@ const ConsoleContainer: React.FC<{ onBackToLanding: () => void }> = ({ onBackToL
       <AuthModal />
 
       {/* Bottom Telemetry Footer */}
-      <footer className="relative z-10 border-t border-slate-200 bg-white/90 backdrop-blur-md px-4 py-3 text-[11px] font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full">
-        <div className="flex items-center space-x-2">
-          <span className="h-2 w-2 rounded-full bg-red-600 animate-ping"></span>
-          <span className="font-semibold text-slate-800">MNEMORIX SENTINEL v2.5 | ZERO-TRUST AI MEMORY FIREWALL</span>
+      <footer className="relative z-10 border-t border-slate-800/80 bg-[#0B0F1A]/90 backdrop-blur-md px-4 py-3.5 text-[11px] font-mono text-slate-400 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full">
+        <div className="flex items-center space-x-2.5">
+          <span className="h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+          <span className="font-semibold text-slate-200">MNEMORIX SENTINEL v2.5 | ZERO-TRUST AI MEMORY FIREWALL</span>
         </div>
-        <div className="flex items-center space-x-3 mt-2 sm:mt-0 text-slate-500">
-          <span className="hidden md:inline text-slate-400">Press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] text-slate-700">Ctrl/⌘+K</kbd> for Copilot</span>
-          <span className="hidden md:inline">•</span>
+        <div className="flex items-center space-x-3 mt-2 sm:mt-0 text-slate-400">
+          <span className="hidden md:inline text-slate-400">Press <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-mono">Ctrl/⌘+K</kbd> for Copilot</span>
+          <span className="hidden md:inline text-slate-700">•</span>
           <span>FIPS 180-4 SHA-256</span>
-          <span>•</span>
+          <span className="text-slate-700">•</span>
           <span>NIST AI RMF 1.0</span>
-          <span>•</span>
-          <span className="text-red-600 font-bold flex items-center space-x-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-600 inline-block"></span>
+          <span className="text-slate-700">•</span>
+          <span className="text-red-400 font-bold flex items-center space-x-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 inline-block shadow-[0_0_6px_rgba(239,68,68,0.8)]"></span>
             <span>Ed25519 Sealed</span>
           </span>
         </div>

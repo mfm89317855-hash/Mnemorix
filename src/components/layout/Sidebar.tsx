@@ -73,7 +73,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-3 lg:p-4 flex flex-col justify-between shadow-xs">
+    <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0B0F1A]/70 backdrop-blur-md p-3 lg:p-4 flex flex-col justify-between shadow-xl">
       <div>
         {/* Navigation Label */}
         <div className="mb-3 hidden lg:block px-3 pt-1">
@@ -83,7 +83,7 @@ export const Sidebar: React.FC = () => {
           </p>
         </div>
 
-        <nav className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-1 gap-1">
+        <nav className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-1 gap-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -93,20 +93,20 @@ export const Sidebar: React.FC = () => {
                 onClick={() => { soundClick(); setActiveTab(item.id); }}
                 className={`group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium transition-all duration-200 ${
                   isActive
-                    ? 'sidebar-nav-active shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                    ? 'sidebar-nav-active shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                    : 'text-slate-400 hover:bg-slate-900 hover:text-white border border-transparent'
                 }`}
               >
                 <div className="flex items-center space-x-2.5">
                   <div className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all ${
                     isActive
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-600'
+                      ? 'bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.3)]'
+                      : 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-red-400'
                   }`}>
                     <Icon className="h-3.5 w-3.5" />
                   </div>
                   <div className="text-left hidden lg:block">
-                    <div className={`text-[12.5px] font-semibold leading-tight ${isActive ? 'text-red-700' : 'text-slate-700'}`}>
+                    <div className={`text-[12.5px] font-semibold leading-tight ${isActive ? 'text-white font-bold' : 'text-slate-300'}`}>
                       {item.label}
                     </div>
                     <div className="text-[10px] text-slate-400 font-mono leading-tight hidden xl:block">
@@ -117,7 +117,7 @@ export const Sidebar: React.FC = () => {
 
                 {item.badge && (
                   <span
-                    className={`hidden lg:inline-flex items-center rounded-lg px-1.5 py-0.5 text-[9px] font-mono font-bold shrink-0 ${
+                    className={`hidden lg:inline-flex items-center rounded-lg px-2 py-0.5 text-[9px] font-mono font-bold shrink-0 ${
                       item.badgeVariant === 'danger'
                         ? 'badge-red'
                         : item.badgeVariant === 'warning'
@@ -135,29 +135,31 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Bottom Sentinel Health Card */}
-      <div className="hidden lg:block mt-4 rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-slate-100/50 p-3.5 shadow-xs">
-        <div className="flex items-center justify-between mb-2.5">
+      <div className="hidden lg:block mt-4 rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/5 rounded-full blur-xl pointer-events-none" />
+        
+        <div className="flex items-center justify-between mb-2.5 relative z-10">
           <div className="flex items-center space-x-1.5">
-            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-50 border border-red-200">
-              <Lock className="h-3 w-3 text-red-600" />
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-500/10 border border-red-500/30">
+              <Lock className="h-3 w-3 text-red-400" />
             </div>
-            <span className="text-[11px] font-mono font-bold text-slate-800">MERKLE ANCHOR</span>
+            <span className="text-[11px] font-mono font-bold text-slate-200">MERKLE ANCHOR</span>
           </div>
-          <span className={`flex h-2.5 w-2.5 rounded-full ${isChainCompromised ? 'bg-red-500 animate-alert-beacon' : 'bg-emerald-500 animate-status-beacon'}`} />
+          <span className={`flex h-2.5 w-2.5 rounded-full ${isChainCompromised ? 'bg-red-500 animate-alert-beacon' : 'bg-emerald-400 animate-status-beacon shadow-[0_0_8px_rgba(52,211,153,0.8)]'}`} />
         </div>
 
-        <div className="space-y-1.5 text-[10.5px] font-mono">
+        <div className="space-y-1.5 text-[10.5px] font-mono relative z-10">
           <div className="flex justify-between items-center">
-            <span className="text-slate-500">Root Hash:</span>
-            <span className="text-red-600 font-bold font-mono tracking-tight">f004...726a</span>
+            <span className="text-slate-400">Root Hash:</span>
+            <span className="text-red-400 font-bold font-mono tracking-tight">f004...726a</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-slate-500">Signature:</span>
-            <span className="text-slate-600 font-semibold">Ed25519</span>
+            <span className="text-slate-400">Signature:</span>
+            <span className="text-slate-300 font-semibold">Ed25519</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-slate-500">Zero-Trust:</span>
-            <span className={`font-bold ${isChainCompromised ? 'text-red-600' : 'text-emerald-600'}`}>
+            <span className="text-slate-400">Zero-Trust:</span>
+            <span className={`font-bold ${isChainCompromised ? 'text-red-400' : 'text-emerald-400'}`}>
               {isChainCompromised ? 'BREACHED' : 'ACTIVE'}
             </span>
           </div>

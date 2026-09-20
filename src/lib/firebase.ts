@@ -4,7 +4,8 @@
  * Email/Password authentication, and real-time Cloud Firestore synchronization.
  */
 
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseApp, deleteApp } from 'firebase/app';
+import { getAnalytics, Analytics } from 'firebase/analytics';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -44,26 +45,84 @@ export interface AuthUserProfile {
 
 const STORAGE_CUSTOM_CONFIG = 'mnemorix_firebase_config';
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBXANpP8SgiotR8vtUl0qoqM6RHoV-tHYU',
+  authDomain: 'minemorix.firebaseapp.com',
+  projectId: 'minemorix',
+  storageBucket: 'minemorix.firebasestorage.app',
+  messagingSenderId: '128013879658',
+  appId: '1:128013879658:web:b4856903d25e00331cbd13',
+  measurementId: 'G-EZDF9PW6ZR',
+};
+
+function cleanValue(val: any, fallback: string): string {
+  if (!val || typeof val !== 'string') return fallback;
+  const trimmed = val.trim();
+  if (trimmed === 'y' || trimmed.length <= 1 || trimmed === 'undefined' || trimmed === 'null') {
+    return fallback;
+  }
+  return trimmed;
+}
+
 /**
- * Retrieve configuration from env or local storage
+ * Retrieve configuration from env or default config with localStorage override
  */
 export function getFirebaseConfig() {
+  const env = (import.meta as any).env || {};
+  
+  const apiKey = cleanValue(env.VITE_FIREBASE_API_KEY, DEFAULT_FIREBASE_CONFIG.apiKey);
+  const projectId = cleanValue(env.VITE_FIREBASE_PROJECT_ID, DEFAULT_FIREBASE_CONFIG.projectId);
+  
+  // authDomain must have a dot, otherwise fallback to minemorix.firebaseapp.com
+  let authDomain = cleanValue(env.VITE_FIREBASE_AUTH_DOMAIN, DEFAULT_FIREBASE_CONFIG.authDomain);
+  if (!authDomain.includes('.')) {
+    authDomain = `${projectId}.firebaseapp.com`;
+  }
+  
+  let storageBucket = cleanValue(env.VITE_FIREBASE_STORAGE_BUCKET, DEFAULT_FIREBASE_CONFIG.storageBucket);
+  if (!storageBucket.includes('.')) {
+    storageBucket = `${projectId}.firebasestorage.app`;
+  }
+  
+  const messagingSenderId = cleanValue(env.VITE_FIREBASE_MESSAGING_SENDER_ID, DEFAULT_FIREBASE_CONFIG.messagingSenderId);
+  const appId = cleanValue(env.VITE_FIREBASE_APP_ID, DEFAULT_FIREBASE_CONFIG.appId);
+  const measurementId = cleanValue(env.VITE_FIREBASE_MEASUREMENT_ID, DEFAULT_FIREBASE_CONFIG.measurementId);
+
+  // If localStorage has an old or broken config, clear it
   try {
     const saved = localStorage.getItem(STORAGE_CUSTOM_CONFIG);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.apiKey && parsed.projectId) return parsed;
+      if (
+        !parsed.apiKey ||
+        !parsed.authDomain ||
+        !parsed.authDomain.includes('.') ||
+        parsed.authDomain === 'y' ||
+        parsed.projectId === 'y'
+      ) {
+        localStorage.removeItem(STORAGE_CUSTOM_CONFIG);
+      } else if (parsed.apiKey.startsWith('AIzaSy') && parsed.projectId && parsed.authDomain.includes('.')) {
+        return {
+          apiKey: parsed.apiKey,
+          authDomain: parsed.authDomain,
+          projectId: parsed.projectId,
+          storageBucket: parsed.storageBucket || `${parsed.projectId}.firebasestorage.app`,
+          messagingSenderId: parsed.messagingSenderId || messagingSenderId,
+          appId: parsed.appId || appId,
+          measurementId: parsed.measurementId || measurementId,
+        };
+      }
     }
   } catch {}
 
-  const env = (import.meta as any).env || {};
   return {
-    apiKey: env.VITE_FIREBASE_API_KEY || '',
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: env.VITE_FIREBASE_PROJECT_ID || '',
-    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: env.VITE_FIREBASE_APP_ID || '',
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket,
+    messagingSenderId,
+    appId,
+    measurementId,
   };
 }
 
@@ -81,24 +140,72 @@ export function saveCustomFirebaseConfig(config: Record<string, string>) {
   }
 }
 
+export function clearCustomFirebaseConfig() {
+  try {
+    localStorage.removeItem(STORAGE_CUSTOM_CONFIG);
+    // Also reset the singleton instances so they reinitialize with env vars
+    _app = null;
+    _auth = null;
+    _db = null;
+    _analytics = null;
+    window.location.reload();
+  } catch (err) {
+    console.error('Failed to clear Firebase config:', err);
+  }
+}
+
 // ─── Firebase App & Client Instances ──────────────────────────────────────────
 
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _db: Firestore | null = null;
+let _analytics: Analytics | null = null;
 
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured()) return null;
+  const config = getFirebaseConfig();
+  
   if (!_app) {
-    const config = getFirebaseConfig();
     try {
-      _app = getApps().length ? getApp() : initializeApp(config);
+      // Check if there's already a Firebase app initialized (e.g. from a previous config)
+      if (getApps().length) {
+        const existingApp = getApp();
+        // If the existing app was initialized with a different API key, delete it and reinitialize
+        if (existingApp.options.apiKey !== config.apiKey) {
+          console.info('[Firebase] Config changed, reinitializing Firebase app...');
+          deleteApp(existingApp).catch(() => {});
+          _app = initializeApp(config);
+        } else {
+          _app = existingApp;
+        }
+      } else {
+        _app = initializeApp(config);
+      }
+      if (typeof window !== 'undefined') {
+        _analytics = getAnalytics(_app);
+      }
     } catch (err) {
       console.error('Firebase initialization error:', err);
       return null;
     }
+  } else if (_app.options.apiKey !== config.apiKey) {
+    // Config changed since last init — reinitialize
+    console.info('[Firebase] Config mismatch detected, reinitializing...');
+    try {
+      deleteApp(_app).catch(() => {});
+    } catch {}
+    _app = null;
+    _auth = null;
+    _db = null;
+    _analytics = null;
+    return getFirebaseApp(); // recursive call with clean state
   }
   return _app;
+}
+
+export function getFirebaseAnalytics(): Analytics | null {
+  getFirebaseApp(); // ensures app and analytics are initialized
+  return _analytics;
 }
 
 export function getFirebaseAuth(): Auth | null {

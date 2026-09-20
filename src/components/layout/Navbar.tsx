@@ -68,29 +68,31 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
 
   const handleAudit = useCallback(() => {
     soundClick();
-    auditChainIntegrity();
-    setTimeout(() => soundChainVerified(), 600);
+    const ok = auditChainIntegrity();
+    if (ok) {
+      soundChainVerified();
+      alert('🔒 Merkle DAG Verification Passed!\nAll cryptographic blocks are valid and Ed25519 signatures match root anchor.');
+    }
   }, [auditChainIntegrity]);
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/96 backdrop-blur-xl shadow-sm">
-        
-        {/* Ultra-thin accent line at very top */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-60" />
-        
-        <div className="mx-auto flex h-15 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-2">
-
-          {/* Left: Brand Logo + Landing Page Link */}
+      <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#0B0F1A]/90 backdrop-blur-xl shadow-lg">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+          
+          {/* Left Brand */}
           <div className="flex items-center space-x-3">
             <div
+              onClick={() => {
+                soundClick();
+                setActiveTab('dashboard');
+              }}
               className="flex items-center space-x-3 cursor-pointer group"
-              onClick={() => { soundClick(); setActiveTab('dashboard'); }}
             >
-              <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl shadow-md transition-all duration-300 overflow-hidden ${
+              <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 overflow-hidden ${
                 isChainCompromised
-                  ? 'shadow-red-500/30 glow-red ring-2 ring-red-500'
-                  : 'shadow-red-500/20 group-hover:shadow-red-500/40'
+                  ? 'shadow-[0_0_20px_rgba(239,68,68,0.6)] ring-2 ring-red-500'
+                  : 'shadow-[0_0_15px_rgba(239,68,68,0.25)] group-hover:shadow-[0_0_25px_rgba(239,68,68,0.5)]'
               }`}>
                 <img src="/logo.jpg" alt="MNEMORIX Logo" className="h-full w-full object-cover" />
                 {isChainCompromised && (
@@ -100,10 +102,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
 
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-display text-lg font-extrabold tracking-tight text-slate-900 group-hover:text-red-700 transition-colors">
+                  <span className="font-display text-lg font-black tracking-tight text-white group-hover:text-red-400 transition-colors">
                     MNEMORIX
                   </span>
-                  <span className="rounded-md bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 px-2 py-0.5 text-[10px] font-mono font-bold text-red-600 shadow-xs">
+                  <span className="rounded-md bg-gradient-to-r from-red-600/30 to-rose-600/30 border border-red-500/40 px-2 py-0.5 text-[10px] font-mono font-bold text-red-400 shadow-[0_0_8px_rgba(239,68,68,0.2)]">
                     SENTINEL
                   </span>
                 </div>
@@ -117,10 +119,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
             {onBackToLanding && (
               <button
                 onClick={() => { soundClick(); onBackToLanding(); }}
-                className="hidden lg:flex items-center space-x-1.5 ml-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-red-50 hover:border-red-300 hover:text-red-700 px-2.5 py-1 text-[11px] font-mono font-bold text-slate-600 transition-all"
+                className="hidden lg:flex items-center space-x-1.5 ml-3 rounded-lg border border-slate-800 bg-slate-900/90 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-300 px-2.5 py-1 text-[11px] font-mono font-bold text-slate-300 transition-all shadow-xs"
                 title="Return to Public Overview Landing Page"
               >
-                <Home className="h-3.5 w-3.5 text-red-600" />
+                <Home className="h-3.5 w-3.5 text-red-400" />
                 <span>Overview</span>
               </button>
             )}
@@ -129,25 +131,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
           {/* Center — Live Status Indicator */}
           <div className="hidden md:flex items-center space-x-3">
             {isChainCompromised ? (
-              <div className="flex items-center space-x-2.5 rounded-xl bg-red-50 border border-red-300 px-4 py-1.5 text-xs text-red-700 shadow-sm animate-threat-flash">
+              <div className="flex items-center space-x-2.5 rounded-xl bg-red-950/60 border border-red-500/50 px-4 py-1.5 text-xs text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.25)] animate-threat-flash">
                 <span className="flex h-2 w-2 rounded-full bg-red-500 animate-alert-beacon" />
-                <ShieldAlert className="h-4 w-4 text-red-600" />
+                <ShieldAlert className="h-4 w-4 text-red-400" />
                 <span className="font-mono font-bold tracking-wider">MERKLE ROOT BREACH</span>
                 <button
                   onClick={() => { soundClick(); selfHealChain(); }}
-                  className="ml-1 rounded-lg bg-red-600 hover:bg-red-700 text-white px-3 py-0.5 text-[11px] font-bold transition-all shadow-sm active:scale-95"
+                  className="ml-1 rounded-lg bg-red-600 hover:bg-red-500 text-white px-3 py-0.5 text-[11px] font-bold transition-all shadow-[0_0_10px_rgba(239,68,68,0.5)] active:scale-95"
                 >
                   ⚡ Self-Heal
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2.5 rounded-xl bg-slate-50/80 border border-slate-200 px-4 py-1.5 text-xs text-slate-700 shadow-xs">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-status-beacon" />
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span className="font-mono font-bold text-slate-900 tracking-wider">ZERO-TRUST ACTIVE</span>
-                <span className="text-slate-300 font-mono">|</span>
-                <Activity className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
-                <span className="font-mono text-[11px] text-emerald-700 font-bold">100% INTEGRITY</span>
+              <div className="flex items-center space-x-2.5 rounded-xl bg-slate-900/80 border border-slate-800 px-4 py-1.5 text-xs text-slate-300 shadow-xs">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-status-beacon shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span className="font-mono font-bold text-slate-200 tracking-wider">ZERO-TRUST ACTIVE</span>
+                <span className="text-slate-700 font-mono">|</span>
+                <Activity className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+                <span className="font-mono text-[11px] text-emerald-400 font-bold">100% INTEGRITY</span>
               </div>
             )}
           </div>
@@ -161,8 +163,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
               title={muted ? 'Unmute tactical audio' : 'Mute tactical audio'}
               className={`flex items-center justify-center h-8 w-8 rounded-xl border transition-all shadow-xs ${
                 muted
-                  ? 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'
-                  : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                  ? 'border-slate-800 bg-slate-900/80 text-slate-500 hover:text-slate-300'
+                  : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
               }`}
             >
               {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
@@ -172,9 +174,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
             <button
               onClick={() => { soundClick(); setIsFastnModalOpen(true); }}
               title="Connect MNEMORIX Firewall to Fastn AI Gateway"
-              className="flex items-center space-x-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 sm:px-3 py-1.5 text-xs text-red-700 transition-all font-mono font-bold shadow-xs hover:shadow-sm"
+              className="flex items-center space-x-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-2.5 sm:px-3 py-1.5 text-xs text-red-400 transition-all font-mono font-bold shadow-xs hover:shadow-[0_0_12px_rgba(239,68,68,0.2)]"
             >
-              <Zap className="h-3.5 w-3.5 text-red-600" />
+              <Zap className="h-3.5 w-3.5 text-red-400" />
               <span className="hidden sm:inline">Fastn API</span>
             </button>
 
@@ -182,9 +184,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
             <button
               onClick={handleAudit}
               title="Perform cryptographic verification across all Merkle blocks"
-              className="hidden sm:flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-red-300 px-3 py-1.5 text-xs text-slate-700 transition-all font-mono shadow-xs font-semibold"
+              className="hidden sm:flex items-center space-x-1.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 hover:border-red-500/30 px-3 py-1.5 text-xs text-slate-300 transition-all font-mono shadow-xs font-semibold"
             >
-              <RefreshCw className="h-3.5 w-3.5 text-red-600" />
+              <RefreshCw className="h-3.5 w-3.5 text-red-400" />
               <span>Verify DAG</span>
             </button>
 
@@ -192,9 +194,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
             <button
               onClick={() => { soundClick(); setIsComplianceModalOpen(true); }}
               title="Generate SOC2 / ISO 42001 / NIST AI RMF certified report"
-              className="flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-red-300 px-2.5 sm:px-3 py-1.5 text-xs text-slate-700 transition-all font-mono shadow-xs font-semibold"
+              className="flex items-center space-x-1.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 hover:border-red-500/30 px-2.5 sm:px-3 py-1.5 text-xs text-slate-300 transition-all font-mono shadow-xs font-semibold"
             >
-              <FileCheck className="h-3.5 w-3.5 text-red-600" />
+              <FileCheck className="h-3.5 w-3.5 text-red-400" />
               <span className="hidden sm:inline">Compliance</span>
             </button>
 
@@ -203,12 +205,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
               onClick={() => { soundClick(); setIsSettingsModalOpen(true); }}
               className={`flex items-center space-x-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-mono transition-all shadow-xs ${
                 hasGeminiKey
-                  ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
-                  : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                  ? 'border-red-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
+                  : 'border-slate-800 bg-slate-900/80 text-slate-400 hover:text-white hover:border-slate-700'
               }`}
               title="Configure Gemini 2.5 API Key & Security Parameters"
             >
-              <Cpu className="h-3.5 w-3.5 text-red-600" />
+              <Cpu className="h-3.5 w-3.5 text-red-400" />
               <span className="hidden sm:inline">{hasGeminiKey ? 'Gemini Active' : 'API Key'}</span>
               <Key className="h-3 w-3 opacity-60" />
             </button>
@@ -223,24 +225,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                       soundClick();
                       setIsUserMenuOpen(!isUserMenuOpen);
                     }}
-                    className="flex items-center space-x-2 rounded-xl border border-red-200 bg-red-50/80 hover:bg-red-100/80 px-2 sm:px-2.5 py-1 transition-all shadow-2xs group"
+                    className="flex items-center space-x-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-2 sm:px-2.5 py-1 transition-all shadow-xs group"
                     title={`Account: ${user.displayName || user.email}`}
                   >
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt={user.displayName || 'User'}
-                        className="h-6 w-6 rounded-full border border-red-300 object-cover"
+                        className="h-6 w-6 rounded-full border border-red-400/50 object-cover"
                       />
                     ) : (
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px]">
                         {(user.displayName || 'U')[0].toUpperCase()}
                       </div>
                     )}
-                    <span className="text-[11px] font-mono font-bold text-slate-800 hidden md:inline truncate max-w-[80px]">
+                    <span className="text-[11px] font-mono font-bold text-slate-200 hidden md:inline truncate max-w-[80px]">
                       {user.displayName?.split(' ')[0]}
                     </span>
-                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-red-600 transition-colors" />
+                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-red-400 transition-colors" />
                   </button>
 
                   {/* Direct 1-Click Sign Out Quick Action */}
@@ -250,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                       logout();
                     }}
                     title="Sign Out from Active Session"
-                    className="flex items-center justify-center h-8 w-8 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-300 text-slate-500 hover:text-red-600 transition-all shadow-2xs"
+                    className="flex items-center justify-center h-8 w-8 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-red-500/15 hover:border-red-500/40 text-slate-400 hover:text-red-400 transition-all shadow-xs"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                   </button>
@@ -258,14 +260,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
 
                 {/* Dropdown Menu */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border-2 border-red-500/20 bg-white p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 font-mono text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 mb-2">
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-red-500/30 bg-slate-950 p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 font-mono text-xs shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 mb-2">
                       <div className="flex items-center space-x-2">
                         {user.photoURL ? (
                           <img
                             src={user.photoURL}
                             alt=""
-                            className="h-8 w-8 rounded-full border border-red-300 object-cover"
+                            className="h-8 w-8 rounded-full border border-red-400/50 object-cover"
                           />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs">
@@ -273,17 +275,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="font-bold text-slate-900 truncate">
+                          <div className="font-bold text-white truncate">
                             {user.displayName}
                           </div>
-                          <div className="text-[10px] text-slate-500 truncate">
+                          <div className="text-[10px] text-slate-400 truncate">
                             {user.email}
                           </div>
                         </div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[10px]">
-                        <span className="text-slate-500">Clearance:</span>
-                        <span className="rounded bg-red-100 text-red-700 font-bold px-1.5 py-0.2 border border-red-200">
+                      <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
+                        <span className="text-slate-400">Clearance:</span>
+                        <span className="rounded bg-red-500/20 text-red-400 font-bold px-1.5 py-0.5 border border-red-500/30">
                           LEVEL-4 SEC-OPS
                         </span>
                       </div>
@@ -296,10 +298,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                           setIsUserMenuOpen(false);
                           setIsAuthModalOpen(true);
                         }}
-                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-left text-[11px]"
+                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-slate-900 transition-colors text-left text-[11px]"
                       >
-                        <User className="h-3.5 w-3.5 text-slate-500" />
-                        <span>Account Details & Keys</span>
+                        <User className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Account Details &amp; Keys</span>
                       </button>
 
                       <button
@@ -308,9 +310,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                           setIsUserMenuOpen(false);
                           logout();
                         }}
-                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-red-600 hover:bg-red-50 transition-colors text-left text-[11px] font-bold"
+                        className="w-full flex items-center space-x-2 rounded-lg px-2.5 py-2 text-red-400 hover:bg-red-500/10 transition-colors text-left text-[11px] font-bold"
                       >
-                        <LogOut className="h-3.5 w-3.5 text-red-600" />
+                        <LogOut className="h-3.5 w-3.5 text-red-400" />
                         <span>Sign Out</span>
                       </button>
                     </div>
@@ -324,10 +326,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
                   soundClick();
                   setIsAuthModalOpen(true);
                 }}
-                className="flex items-center space-x-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300 px-3 py-1.5 text-xs font-mono font-bold text-red-700 transition-all shadow-2xs active:scale-95"
+                className="flex items-center space-x-1.5 rounded-xl border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 text-xs font-mono font-bold text-red-300 transition-all shadow-[0_0_12px_rgba(239,68,68,0.2)] active:scale-95"
                 title="Sign In to MNEMORIX Sentinel"
               >
-                <User className="h-3.5 w-3.5 text-red-600" />
+                <User className="h-3.5 w-3.5 text-red-400" />
                 <span>Sign In</span>
               </button>
             )}
@@ -335,10 +337,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onBackToLanding }) => {
             {/* Sentinel AI Copilot */}
             <button
               onClick={() => { soundClick(); setIsCopilotOpen(!isCopilotOpen); }}
-              className={`flex items-center space-x-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm ${
+              className={`flex items-center space-x-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition-all ${
                 isCopilotOpen
-                  ? 'bg-slate-900 text-white shadow-slate-900/20'
-                  : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-red-500/25'
+                  ? 'bg-slate-800 text-white shadow-md'
+                  : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]'
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />

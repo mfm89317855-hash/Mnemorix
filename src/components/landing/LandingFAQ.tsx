@@ -34,19 +34,19 @@ export const LandingFAQ: React.FC = () => {
   };
 
   return (
-    <section id="faq" className="py-20 lg:py-28 bg-white border-b border-slate-200">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="faq" className="py-20 lg:py-28 bg-[#080B14] border-b border-slate-800/80 relative overflow-hidden">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
         <div className="text-center space-y-3 mb-16">
-          <div className="inline-flex items-center space-x-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-mono font-bold text-red-700">
+          <div className="inline-flex items-center space-x-2 rounded-full border border-red-500/30 bg-red-500/10 px-3.5 py-1 text-xs font-mono font-bold text-red-400 backdrop-blur-sm shadow-[0_0_12px_rgba(239,68,68,0.15)]">
             <HelpCircle className="h-3.5 w-3.5" />
             <span>KNOWLEDGE BASE</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-slate-950">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white">
             Frequently Asked Questions
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 font-sans leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-400 font-sans leading-relaxed">
             Everything you need to know about autonomous memory security, cryptographic proofs, and deployment models.
           </p>
         </div>
@@ -60,26 +60,26 @@ export const LandingFAQ: React.FC = () => {
                 key={idx}
                 className={`rounded-2xl border transition-all ${
                   isOpen
-                    ? 'border-red-500/40 bg-red-50/30 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-red-500/50 bg-slate-900/90 shadow-[0_0_20px_rgba(239,68,68,0.12)]'
+                    : 'border-slate-800/80 bg-slate-950/60 hover:border-slate-700'
                 }`}
               >
                 <button
                   onClick={() => toggleFAQ(idx)}
                   className="w-full px-6 py-4 text-left flex items-center justify-between gap-4"
                 >
-                  <span className="font-display text-sm font-bold text-slate-900">
+                  <span className="font-display text-sm font-bold text-white">
                     {faq.q}
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 text-red-600 shrink-0 transition-transform duration-200 ${
+                    className={`h-4 w-4 text-red-400 shrink-0 transition-transform duration-200 ${
                       isOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 pb-5 text-xs text-slate-600 font-sans leading-relaxed border-t border-red-100 pt-3 animate-in fade-in">
+                  <div className="px-6 pb-5 text-xs text-slate-300 font-sans leading-relaxed border-t border-slate-800/80 pt-3 animate-in fade-in">
                     {faq.a}
                   </div>
                 )}
